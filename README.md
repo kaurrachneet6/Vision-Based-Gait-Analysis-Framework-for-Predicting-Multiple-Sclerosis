@@ -7,3 +7,4 @@
 * Richard Sowers r-sowers@illinois.edu, http://publish.illinois.edu/r-sowers/
 
 ### Data Preperation 
+* **Downsample.ipynb**: To convert videos to frames at a 30FPS (frames per second) and downsample if needed. 
