@@ -9,7 +9,8 @@
 ### Data Preperation 
 * **Downsample.ipynb**: To convert videos to frames at a 30FPS (frames per second) and downsample if needed. 
 * **OpenPose2Dkeypoints.ipynb**: To compute 2D coordinates from extracted frames using OpenPose package https://github.com/CMU-Perceptual-Computing-Lab/openpose.
-* **CameraCalibartion.ipynb**: To convert pixel units to centimeters (cm) in world coordinates considering the origin of the treadmill as the origin of the world coordinates. 
+* **CameraCalibartion.ipynb**: To convert pixel units to centimeters (cm) in world coordinates considering the origin of the treadmill as the origin of the world coordinates.
+* **PostProcessing2Ddata.ipynb**: To manage left-right swap issue and missing value treatment for lower body frames and retaining the coorect body markers for the feet frames. Also computes the statistics of the postprocessing steps. 
 
 ### Machine Learning 
 
