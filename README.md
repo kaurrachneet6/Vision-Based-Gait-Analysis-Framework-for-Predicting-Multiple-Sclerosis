@@ -18,6 +18,7 @@
 
 ### Machine Learning 
 * **TaskGeneralizeWtoWT_MLtraditional.ipynb**:
+* **SubjectGeneralizeW_MLtraditional.ipynb**:
 
 ### Discussion analysis
 
