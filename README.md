@@ -15,6 +15,7 @@
 * **Convert2Dto3D.ipynb**: To use the computed intrinsic and extrinsic camera matrices (via the CameraCalibration.ipynb) for both the front and side camera to convert all the extracted 2D pose coordinates to 3D real-world pose coordinates http://www.cs.cmu.edu/~16385/s17/Slides/11.1_Camera_matrix.pdf.
 * **Postprocessing3Ddata.ipynb**: Postprocessing the created 3D keypoints (via intrinsic and extrinsic matrix) for lower body and feet and combining together both front and side view 3D coordinates to get the final combined coordinates. Further, scaling all average hip heights to a constant to normalize for subject heights in our dataset.
 * **IdentifyHSR.ipynb**: Identifying frames with HSRs in each video for each cohort and trial to establish break points and also evaluate the corresponding HSR labelling via the ground truth available. Further, downsampling with smoothing to define fixed shape of the input tensor for models. 
+* **StrideStats.ipynb**: Calculating the stats for strides in each framework (HOA-BW/W, MS-BW/W, PD-BW/W). This will help write stats for count of strides used in training and testing set of each framework, 1. task generalization a) W to WT, and b) T to TT and 2. subject generalization a) W, b) WT, c) T, and d) TT.
 
 ### Machine Learning 
 * **TaskGeneralizeWtoWT_MLtraditional.ipynb**:
