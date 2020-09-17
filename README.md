@@ -18,6 +18,7 @@
 * **StrideStats.ipynb**: Calculating the stats for strides in each framework (HOA-BW/W, MS-BW/W, PD-BW/W). This will help write stats for count of strides used in training and testing set of each framework, 1. task generalization a) W to WT, and b) T to TT and 2. subject generalization a) W, b) WT, c) T, and d) TT.
 
 ### Machine Learning 
+* **imports.py**: package imports
 * **SummaryStats.ipynb**: Creating the summary statistics file for the traditional ML algorithms on task/subject generalization frameworks. We use the summary statistics as range, CoV and asymmetry between the right and left limbs as the features to input to the traditional models requiring fixed size 1D input for each training/testing set sample.
 * **TaskGeneralizeWtoWT_MLtraditional.ipynb**: Traditional ML algorithms on task generalization framework 1: W to WT to classify HOA/MS/PD strides and subjects. 
 * **SubjectGeneralizeW_MLtraditional.ipynb**:
