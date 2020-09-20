@@ -19,9 +19,10 @@
 
 ### Machine Learning 
 * **imports.py**: package imports
+* **split.py**: Function definition for StratifiedGroupKFold for handling imbalance in case of Group K fold https://github.com/scikit-learn/scikit-learn/issues/13621
 * **SummaryStats.ipynb**: Creating the summary statistics file for the traditional ML algorithms on task/subject generalization frameworks. We use the summary statistics as range, CoV and asymmetry between the right and left limbs as the features to input to the traditional models requiring fixed size 1D input for each training/testing set sample.
-* **TaskGeneralizeWtoWT_MLtraditional.ipynb**: Traditional ML algorithms on task generalization framework 1: W to WT to classify HOA/MS/PD strides and subjects. 
-* **SubjectGeneralizeW_MLtraditional.ipynb**:
+* **TaskGeneralizeWtoWT_MLtraditional.ipynb**: Traditional ML algorithms on task generalization framework 1: train on walking (W) and test on walking while talking (WT) and 2: train on virtual beam walking (VBW) and test on virtual beam walking while talking (VBWT) to classify HOA/MS/PD strides and subjects. We use majority voting for subject classification.
+* **SubjectGeneralizeW_MLtraditional.ipynb**: Traditional ML algorithms on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects. We use majority voting for subject classification.
 
 ### Discussion analysis
 
