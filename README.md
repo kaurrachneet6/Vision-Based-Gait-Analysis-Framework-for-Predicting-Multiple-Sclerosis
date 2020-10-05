@@ -28,4 +28,5 @@
 * **SubjectGeneralize_Conv1D.ipynb**: 1D CNN algorithm on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
 
 ### Discussion analysis
+*  **FeatureImportance.ipynb**: 
 
