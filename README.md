@@ -17,6 +17,10 @@
 * **IdentifyHSR.ipynb**: Identifying frames with HSRs in each video for each cohort and trial to establish break points and also evaluate the corresponding HSR labelling via the ground truth available. Further, downsampling with smoothing to define fixed shape of the input tensor for models. 
 * **StrideStats.ipynb**: Calculating the stats for strides in each framework (HOA-BW/W, MS-BW/W, PD-BW/W). This will help write stats for count of strides used in training and testing set of each framework, 1. task generalization a) W to WT, and b) T to TT and 2. subject generalization a) W, b) WT, c) T, and d) TT.
 
+### CoP validation
+To Validating the estimates 3D poses via CoP computed on the treadmill 
+* **CoPvalidation_make_viz_dataframes.ipynb**: This code makes (and saves as csv) the dataframe for each video containing their relevant frames, corresponding feet coordinates for these frames and their relative treadmill extracted CoP values 
+* **CoPvalidation_evaluate_visually_quantitatively.ipynb**: This code qualitatively and quantitatively validates the center of mass trajectory of estimates body coordinates with their respective treadmill extracted CoP's on a frame by frame basis
 ### Machine Learning 
 * **imports.py**: package imports
 * **split.py**: Function definition for StratifiedGroupKFold for handling imbalance in case of Group K fold https://github.com/scikit-learn/scikit-learn/issues/13621
