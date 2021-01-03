@@ -8,7 +8,7 @@
 
 ### Dependencies:
 * Python 3.6
-* The versions of Python packages can be found in the file XXX.txt/XXX.yml
+* The versions of Python packages can be found in the file X.txt/X.yml
 
 ### Code structure:
 #### Data Preperation 
