@@ -1,9 +1,14 @@
 # GVS: Gait Video Study 
 
 ### Authors:
-* Rachneet Kaur rk4@illinois.edu https://www.linkedin.com/in/rachneet-kaur-a1ba5354/
-* Manuel Hernandez mhernand@illinois.edu, http://kch.illinois.edu/hernandez
-* Richard Sowers r-sowers@illinois.edu, http://publish.illinois.edu/r-sowers/
+* Rachneet Kaur, Department of Industrial and Enterprise Systems Engineering at the University of Illinois at Urbana-Champaign, rk4@illinois.edu, https://kaurrachneet6.github.io/
+* Robert Motl, Department of Physical Therapy at the University of Alabama at Birmingham, Birmingham, AL 35233, USA
+* Manuel Hernandez, Department of Kinesiology and Community Health at the University of Illinois at Urbana-Champaign, mhernand@illinois.edu, http://kch.illinois.edu/hernandez
+* Richard Sowers, Department of Industrial and Enterprise Systems Engineering and the Department of Mathematics at the University of Illinois at Urbana-Champaign, r-sowers@illinois.edu, http://publish.illinois.edu/r-sowers/
+
+### Dependencies:
+* Python 3.6
+* The versions of Python packages can be found in the file XXX.txt/XXX.yml
 
 ### Code structure:
 #### Data Preperation 
