@@ -12,6 +12,8 @@ import random
 import copy
 import operator
 import time
+from scipy import stats 
+import ast
 
 import xgboost 
 import sklearn
@@ -50,3 +52,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from skorch import NeuralNetClassifier #For hyperparameter tuning in pytorch models 
+from skorch import helper
+from skorch.callbacks import EarlyStopping
+from skorch.callbacks import LRScheduler
+from skorch.callbacks import EpochScoring
