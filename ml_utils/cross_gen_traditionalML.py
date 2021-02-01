@@ -500,18 +500,19 @@ def run_ml_models(ml_models, X, Y, train_indices, test_indices, framework, resul
         metrics[ml_model] = sum(stride_person_metrics, [])
         plot_ROC(ml_model, test_subjects_true_predicted_labels, framework, results_path, save_results)
         print ('********************************')
-    scoring_metrics = ['stride_mean_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
+    stride_scoring_metrics = ['stride_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
                  'stride_precision_class_wise', 'stride_recall_macro', 'stride_recall_micro', \
                  'stride_recall_weighted', 'stride_recall_class_wise', \
                  'stride_F1_macro', 'stride_F1_micro', 'stride_F1_weighted', 'stride_F1_class_wise', \
-                 'stride_AUC_macro', 'stride_AUC_weighted', 'person_accuracy', 'person_precision_macro', 'person_precision_micro', \
+                 'stride_AUC_macro', 'stride_AUC_weighted']
+    person_scoring_metrics = ['person_accuracy', 'person_precision_macro', 'person_precision_micro', \
                  'person_precision_weighted', 'person_precision_class_wise', 'person_recall_macro', 'person_recall_micro', \
                  'person_recall_weighted', 'person_recall_class_wise', \
                  'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
                  'person_AUC_macro', 'person_AUC_weighted']
     
     
-    metrics.index = [i + '_mean' for i in scoring_metrics] + [i + '_std' for i in scoring_metrics]
+    metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics]
     #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
     if save_results:
         metrics.to_csv(results_path+framework+'\\cross_generalize_'+framework+'_result_metrics.csv')

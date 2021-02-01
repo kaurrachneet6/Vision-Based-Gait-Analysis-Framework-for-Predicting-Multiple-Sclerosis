@@ -15,6 +15,12 @@ import time
 from scipy import stats 
 import ast
 from statistics import mean, stdev
+import json
+import argparse
+import sys
+from datetime import datetime
+import pickle
+
 
 import xgboost 
 import sklearn
@@ -52,8 +58,21 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from skorch import NeuralNetClassifier #For hyperparameter tuning in pytorch models 
+from skorch import NeuralNet, NeuralNetClassifier #For hyperparameter tuning in pytorch models 
 from skorch import helper
+from skorch.dataset import Dataset as Dataset_skorch
 from skorch.callbacks import EarlyStopping
 from skorch.callbacks import LRScheduler
 from skorch.callbacks import EpochScoring
+from skorch.helper import SliceDataset
+from skorch.utils import to_numpy
+from numpy import argmax
+
+#This needs to contain all optimizers that will be used so they can be properly imported
+optims = {
+    'torch.optim.Adam': torch.optim.Adam,
+    'torch.optim.SGD': torch.optim.SGD,
+    'torch.optim.Adagrad': torch.optim.Adagrad,
+    'torch.optim.RMSprop': torch.optim.RMSprop,
+    'torch.optim.AdamW': torch.optim.AdamW,
+}
