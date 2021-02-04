@@ -20,7 +20,7 @@ class GaitTrainer():
         self.train_framework = self.parameter_dict['train_framework']
         self.test_framework = self.parameter_dict['test_framework']
         self.hyperparameter_grid = hyperparameter_grid
-        self.save_results_path = self.parameter_dict['results_path'] + self.parameter_dict['model_path'] + self.framework + '\\'
+        self.save_results_path = self.parameter_dict['results_path'] + self.framework + '\\' + self.parameter_dict['model_path']
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path

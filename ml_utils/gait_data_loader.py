@@ -65,5 +65,4 @@ class GaitDataset(Dataset_skorch):
 #         print (label.shape)
         pid = torch.Tensor(y)[:1]
 #         print (X.shape, y.shape)
-        return data, label.squeeze(), pid
-    
+        return data, label.squeeze(), pid   

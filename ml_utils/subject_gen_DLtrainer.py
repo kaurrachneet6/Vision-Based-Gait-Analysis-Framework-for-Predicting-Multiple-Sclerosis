@@ -8,8 +8,8 @@ reload(gait_data_loader)
 from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
-from ml_utils.DLutils import save_model, load_model, design
-
+from ml_utils.DLutils import save_model, load_model, design, custom_StandardScaler
+    
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
         self.parameter_dict = parameter_dict
@@ -21,7 +21,7 @@ class GaitTrainer():
         self.comparision_frameworks = self.parameter_dict['comparision_frameworks']
         self.scenario = self.parameter_dict['scenario']
         self.hyperparameter_grid = hyperparameter_grid
-        self.save_results_path = self.parameter_dict['results_path'] + self.parameter_dict['model_path'] + self.framework + '\\'
+        self.save_results_path = self.parameter_dict['results_path']  + self.framework + '\\'+ self.parameter_dict['model_path']
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path
@@ -55,55 +55,186 @@ class GaitTrainer():
         print ('Common subjects across all frameworks: ', self.common_pids)
     
     
-    def get_data_loaders(self):
+    def create_folder_for_results(self):
+        #Create folder for saving results
+        time_now = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_%f")
+        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"\\"
+        print("save path: ", self.save_path)
+        os.mkdir(self.save_path)
+        #Copy config file to results folder
+        with open(self.config_path, 'rb') as src, open(self.save_path+"config.json", 'wb') as dst: dst.write(src.read())
+
+    
+    def create_model(self, model, device_):
         '''
-        To define the training and testing data loader to load X, y for training and testing sets in batches 
+        Creates Skorch model
         Arguments:
-            pids_retain_train: Based on the framework, PIDs to extract training data for 
-            pids_retain_test: Based on the framework, PIDs to extract testing data for 
-            parameter_dict: dictionary with parameters defined 
-            train_framework: task to train on 
-            test_framework: task to test on 
-            normalize_type = 'z' for z-score normalization based on training data mean and std or 'm' for min-max normalization 
-                            based on training data min and max 
-        Returns: 
-            training_data_loader, testing_data_loader to load X, y for training and testing sets in batches 
+            device: cuda if GPU is available or cpu 
+        Returns:
+            Created skorch network
         '''
-        #Subject generalization W or WT framework 
-        #Loading the full training data in one go to compute the training data's mean and standard deviation for normalization 
-        #We set the batch_size = len(training_data) for the same 
-        data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'], framework = self.scenario)   
-        data_loader = DataLoader(data, batch_size = len(data), shuffle = self.parameter_dict['shuffle'], \
-                                          num_workers = self.parameter_dict['num_workers'])
-        #Since we loaded all the training data in a single batch, we can read all data and target in one go
-        x_data, target, pid = next(iter(data_loader))
-        #Computing the training data mean and standard deviation for z-score normalization of frame count 
-        self.train_frame_count_mean_ = torch.mean(data['frame_count'])
-        self.train_frame_count_std_ = torch.std(data['frame_count'])
-        print ('Training frame count mean: ', self.train_frame_count_mean_)
-        print ('Training frame count standard deviation: ', self.train_frame_count_std_)
+        net = NeuralNet(
+            model,
+            max_epochs = 2,
+            lr = .0001,
+            criterion=nn.CrossEntropyLoss,
+            optimizer=torch.optim.Adam,
+            device = device_,
+            iterator_train__shuffle=True,
+            batch_size= -1, #Batch size = -1 means full data at once 
+            callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
+            #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
+            (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = True, name = "train_acc")),
+            (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = False, name = "valid_acc"))
+                      ]
+        )
+        return net
+            
+    
+    def accuracy_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the accuracy using the softmax probabilities predicted via skorch neural net in a cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            accuracy 
+        '''
+        y_pred = net.predict(X)
+        print ('In accuracy y_pred: ', y_pred)
+        self.y_true_label = [int(y_val) for y_val in y]
+        print ('In accuracy y true label: ', self.y_true_label)
+        self.y_pred_label = y_pred.argmax(axis = 1)
+        print ('In accuracy y pred label: ', self.y_pred_label)
+        self.yoriginal.append(self.y_true_label)
+        self.ypredicted.append(self.y_pred_label)
+    #     print ('y_pred_label', y_pred_label, y_pred_label.shape)
+        print ('current self.yoriginal: ', self.yoriginal)
 
-        #With training data mean/min and standard deviation/max-min computed, 
-        #we can load the z-score/min-max normalized training and testing data in batches 
-        self.training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, \
-                                    train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_)   
-        self.testing_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_test, framework = self.test_framework, \
-                                  train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_) 
+        accuracy = accuracy_score(self.y_true_label, self.y_pred_label)
+        print ('current accuracy: ', accuracy)
+        return accuracy
 
-        #To make sure the z-score/min-max normalization worked correctly 
-        training_data_loader_check = DataLoader(self.training_data, batch_size = len(self.training_data), shuffle = self.parameter_dict['shuffle'], \
-                                          num_workers = self.parameter_dict['num_workers'])
-        data_check, target_check, pid_check = next(iter(training_data_loader_check))
-        #The normalized means for each of the 37 features must be ~0
-        print ('Normalized training data\'s mean:', torch.mean(data_check['frame_count']))
-        #The normalized standard deviations for each of the 37 feature must be ~1
-        print ('Normalized training data\'s standard deviation:', torch.std(data_check['frame_count']))
+    def precision_macro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the precision_macro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            accuracy 
+        '''
+        print ('In precision_macro y true label: ', self.y_true_label)
+        print ('In precision_macro y pred label: ', self.y_pred_label)
 
- 
+        precision_macro = precision_score(self.y_true_label, self.y_pred_label, average = 'macro')
+        print ('current precision_macro: ', precision_macro)
+        return precision_macro
+    
+    
+    def precision_micro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the precision micro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            accuracy 
+        '''
+        print ('In precision_micro y true label: ', self.y_true_label)
+        print ('In precision_micro y pred label: ', self.y_pred_label)
 
+        precision_micro = precision_score(self.y_true_label, self.y_pred_label, average = 'micro')
+        print ('current precision_macro: ', precision_micro)
+        return precision_micro
+        
+        
+# def models(X, Y, model_name = 'random_forest', framework = 'W', results_path = '..\\MLresults\\', save_results = True):
+#     '''
+#     Arguments:
+#     X, Y, PID groups so that strides of each person are either in training or in testing set
+#     model: model_name, framework we wish to run the code for
+#     Returns: predicted probabilities and labels for each class, stride and subject based evaluation metrics 
+#     '''
+#     Y_ = Y['label'] #Dropping the PID
+#     groups_ = Y['PID']
+#     #We use stratified group K-fold to sample our strides data
+#     gkf = StratifiedGroupKFold(n_splits=5) 
+#     scores={'accuracy': make_scorer(acc), 'precision_macro':make_scorer(precision_score, average = 'macro'), \
+#             'precision_micro':make_scorer(precision_score, average = 'micro'), 'precision_weighted':make_scorer(precision_score, average = 'weighted'), 'recall_macro':make_scorer(recall_score, average = 'macro'), 'recall_micro':make_scorer(recall_score, average = 'micro'), 'recall_weighted':make_scorer(recall_score, average = 'weighted'), 'f1_macro': make_scorer(f1_score, average = 'macro'), 'f1_micro': make_scorer(f1_score, average = 'micro'), 'f1_weighted': make_scorer(f1_score, average = 'weighted'), 'auc_macro': make_scorer(roc_auc_score, average = 'macro', multi_class = 'ovo', needs_proba= True), 'auc_weighted': make_scorer(roc_auc_score, average = 'weighted', multi_class = 'ovo', needs_proba= True)}
+#     if(model_name == 'random_forest'): #Random Forest
+#         grid = {
+#        'randomforestclassifier__n_estimators': [40,45,50],\
+#        'randomforestclassifier__max_depth' : [15,20,25,None],\
+#        'randomforestclassifier__class_weight': [None, 'balanced'],\
+#        'randomforestclassifier__max_features': ['auto','sqrt','log2', None],\
+#        'randomforestclassifier__min_samples_leaf':[1,2,0.1,0.05]
+#         }
+#         #For z-score scaling on training and use calculated coefficients on test set
+#         rf_grid = make_pipeline(StandardScaler(), RandomForestClassifier(random_state=0))
+#         grid_search = GridSearchCV(rf_grid, param_grid=grid, scoring=scores\
+#                            , n_jobs = 1, cv=gkf.split(X, Y_, groups=groups_), refit=False)
+        
+#     grid_search.fit(X, Y_, groups=groups_) #Fitting on the training set to find the optimal hyperparameters 
+#     test_subjects_true_predicted_labels, stride_person_metrics = evaluate(grid_search, Y, yoriginal, ypredicted, framework, model_name, results_path, save_results)
+#     return test_subjects_true_predicted_labels, stride_person_metrics
 
+    
 
+    def train(self, n_splits_ = 5):
+        '''
+        Tunes and trains skorch model for task generalization
+        Arguments:
+            model: Skorch model
+            fullTrainLabelsList: List of training data labels and PIDs
+            trainStridesList_norm: Normlized list of training sequences
+            params: List of hyperparameters to optimize across
+        Returns:
+            Trained and tuned grid search object
+        '''
+        #shuffle data first
+        self.X_sl, self.Y_sl, self.PID_sl = shuffle(self.X_sl, self.Y_sl, self.PID_sl, random_state = 0) 
+        
+        self.X_sl_ = [x for x in self.X_sl]
+#         print ('X format: ', self.X_sl_train_[0])
+        self.Y_sl_ = [int(y) for y in self.Y_sl]
+        self.PID_sl_ = [int(pid) for pid in self.PID_sl]
+        
+#         print ('Shuffled PID and Y:', self.PID_sl_, self.Y_sl_)        
+        self.yoriginal, self.ypredicted = [], []
+        self.pipe = Pipeline([('scale', custom_StandardScaler()), ('net', self.model)])
+#         self.pipe = Pipeline([('net', self.model)])
+        
+        gkf = StratifiedGroupKFold(n_splits=n_splits_)  
+        scores = {'accuracy': self.accuracy_score_multi_class_cv, 'precision_macro': self.precision_macro_score_multi_class_cv, 'precision_micro': self.precision_micro_score_multi_class_cv}
+#         , 'precision_weighted': self.evaluation_scores_multi_class['precision_weighted'], 'recall_macro': self.evaluation_scores_multi_class['recall_macro'], 'recall_micro': self.evaluation_scores_multi_class['recall_micro'], 'recall_weighted': self.evaluation_scores_multi_class['recall_weighted'], 'f1_macro': self.evaluation_scores_multi_class['f1_macro'], 'f1_micro': self.evaluation_scores_multi_class['f1_micro'], 'f1_weighted': self.evaluation_scores_multi_class['f1_weighted'], 'auc_macro': self.evaluation_scores_multi_class['auc_macro'], 'auc_weighted': self.evaluation_scores_multi_class['auc_weighted']}
+        
+        self.grid_search = GridSearchCV(self.pipe, param_grid = self.hyperparameter_grid, scoring = scores, \
+                                        n_jobs = 1, cv = gkf.split(self.X_sl_, self.Y_sl_, groups=self.PID_sl_), \
+                                        refit = False)
+        print("grid search", self.grid_search)
 
+#         print("Cross val split PIDs:\n")
+#         for idx, (train, test) in enumerate(gkf.split(self.X_sl_train_, self.Y_sl_train_, groups=self.PID_sl_train_)):
+#             print ('\nFold: ', idx+1)
+#             print ('\nIndices in train: ', train, '\nIndices in test: ', test)
+#             print('\nPIDs in TRAIN: ', np.unique(self.PID_sl_train[train], axis=0), '\nPIDs in TEST: ', \
+#                   np.unique(self.PID_sl_train[test], axis=0))
+#             print ('**************************************************************')
+
+        #Skorch callback history to get loss to plot
+        start_time = time.time()
+        self.grid_search.fit(self.X_sl, self.Y_sl, groups=self.PID_sl)
+        end_time = time.time()
+        self.training_time = end_time - start_time
+        print("\nTraining/ Cross validation time: ", self.training_time)
+        
+        
     def subject_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5):
         
 #         cols_to_drop = ['PID', 'key', 'cohort', 'trial', 'scenario', 'video', 'stride_number', 'label']
@@ -152,19 +283,20 @@ class GaitTrainer():
             print('Strides in trial ', self.scenario, ' W for cross validation: ', len(self.trial))
             print ('HOA, MS and PD strides in trial ', self.scenario, ' :\n', self.trial['cohort'].value_counts())
             print ('Imbalance ratio in trial ', self.scenario, ' (controls:MS:PD)= 1:X:Y\n', self.trial['cohort'].value_counts()/self.trial['cohort'].value_counts()['HOA'])
-
             
-            
-            
-#         self.get_data_loaders()
-#         self.create_folder_for_results()   
+        print ('PIDs getting used in this run: ', self.trial['PID'].unique())        
+        #Get dataloader 
+        #Subject generalization W or WT framework 
+        #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
+        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario)      
+        self.create_folder_for_results()   
     
-#         if self.parameter_dict['behavior'] == 'train':
-#             self.model = self.create_model(model_, device_)
-#             self.X_sl_train = SliceDataset(self.training_data, idx = 0)
-#             self.Y_sl_train = SliceDataset(self.training_data, idx = 1)
-#             self.PID_sl_train = SliceDataset(self.training_data, idx = 2)
-#             self.train(n_splits_)
+        if self.parameter_dict['behavior'] == 'train':
+            self.model = self.create_model(model_, device_)
+            self.X_sl = SliceDataset(self.data, idx = 0)
+            self.Y_sl = SliceDataset(self.data, idx = 1)
+            self.PID_sl = SliceDataset(self.data, idx = 2)
+            self.train(n_splits_)
 #             cv_results = pd.DataFrame(self.grid_search.cv_results_)
 #             if self.save_results:
 #                 cv_results.to_csv(self.save_path+"cv_results.csv")
@@ -203,3 +335,13 @@ class GaitTrainer():
     
 #         self.evaluate() 
 #         self.plot_ROC() 
+
+
+#To do/check:
+#1. Frame count normalization as part of the pipeline, before it is fed to the model. Make sure that batch size parameter does not hinder this, because when finding out the normalizing mean and std, we need to use the full training data in n-1 folds and not just the batch size amount of samples. This will use creating our own standard scalar that is applicable only to frame count of x_data and not to body_coords.
+#2. Training-validation curves for cv setup
+#3. Count of parameters for selected best model in cv setup
+#4. Do we need evaluate behaviour for this cv setup case
+#5. Do we need resume training behaviour for this cv setup case
+#6. How can we save models/load trained models in this cv setup case
+#7. Retain indices in y_true in acc() to do groupby(pid) using corresponding indices later for subject-wise metrics 
