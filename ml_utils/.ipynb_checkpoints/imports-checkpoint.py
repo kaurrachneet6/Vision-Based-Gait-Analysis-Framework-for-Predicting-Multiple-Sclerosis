@@ -60,12 +60,17 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from skorch import NeuralNet, NeuralNetClassifier #For hyperparameter tuning in pytorch models 
 from skorch import helper
+import skorch
+from skorch.callbacks import Callback
 from skorch.dataset import Dataset as Dataset_skorch
 from skorch.callbacks import EarlyStopping
 from skorch.callbacks import LRScheduler
+from skorch.callbacks import TrainEndCheckpoint
+from skorch.callbacks import PrintLog
 from skorch.callbacks import EpochScoring
 from skorch.helper import SliceDataset
 from skorch.utils import to_numpy
+from skorch.helper import predefined_split
 from numpy import argmax
 
 #This needs to contain all optimizers that will be used so they can be properly imported

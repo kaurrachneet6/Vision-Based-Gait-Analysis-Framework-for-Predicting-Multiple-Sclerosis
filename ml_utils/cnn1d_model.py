@@ -30,7 +30,7 @@ class CNN1D(nn.Module):
 #         print ('x', x)
 #         print ('\nx shape', x.shape)
 #         print ('\nx type', x.type())
-#         print ('\nframe count', frame_count)
+#         print ('\nIn CNN model, frame count: ', frame_count)
 #         print ('\nframe count shape', frame_count.shape)
 #         print ('\n frame count type', frame_count.type())
         x = torch.cat((x, frame_count.unsqueeze(dim = 1)), dim = 1).float()

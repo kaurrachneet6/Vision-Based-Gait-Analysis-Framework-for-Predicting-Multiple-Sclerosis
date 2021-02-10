@@ -92,38 +92,25 @@ class custom_StandardScaler():
         return X
     
 
-def accuracy_score_multi_class_cv(net, X, y):
-        '''
-        Function to compute the accuracy using the softmax probabilities predicted via skorch neural net in a cross validation type setting 
-        Arguments:
-            net: skorch model
-            X: data 
-            y: true target labels
-        Returns:
-            accuracy 
-        '''
-        y_pred = net.predict(X)
-        print ('y_pred: ', y_pred)
-        y_true_label = [int(y_val) for y_val in y]
-        print ('y true label: ', y_true_label)
-        y_pred_label = y_pred.argmax(axis = 1)
-        self.yoriginal.append(y_true_label)
-        self.ypredicted.append(y_pred_label)
-    #     print ('y_pred_label', y_pred_label, y_pred_label.shape)
-        print ('current self.yoriginal: ', self.yoriginal)
+class FixRandomSeed(Callback):    
+    def __init__(self, seed=0):
+        self.seed = 0
     
-        accuracy = accuracy_score(y_true_label, y_pred_label)
-        precision_macro = precision_score(y_true_label, y_pred_label, average = 'macro')
-        precision_micro = precision_score(y_true_label, y_pred_label, average = 'micro')
-        precision_weighted = precision_score(y_true_label, y_pred_label, average = 'weighted')
-        recall_macro = recall_score(y_true_label, y_pred_label, average = 'macro')
-        recall_micro = recall_score(y_true_label, y_pred_label, average = 'micro')
-        recall_weighted = recall_score(y_true_label, y_pred_label, average = 'weighted')        
-        f1_macro = f1_score(y_true_label, y_pred_label, average = 'macro')
-        f1_micro = f1_score(y_true_label, y_pred_label, average = 'micro')
-        f1_weighted = f1_score(y_true_label, y_pred_label, average = 'weighted') 
-        auc_macro = roc_auc_score(y_true_label, y_pred, average = 'macro', multi_class = 'ovo')
-        auc_weighted = roc_auc_score(y_true_label, y_pred, average = 'weighted', multi_class = 'ovo')
-        scores = {'accuracy': accuracy, 'precision_macro': precision_macro, 'precision_micro':precision_micro, 'precision_weighted': precision_weighted, 'recall_macro': recall_macro, 'recall_micro': recall_micro, 'recall_weighted': recall_weighted, 'f1_macro': f1_macro, 'f1_micro': f1_micro, 'f1_weighted': f1_weighted, 'auc_macro': auc_macro, 'auc_weighted': auc_weighted}
-        print ('current scores: ', scores)
-        return scores
+    def initialize(self):
+        print("setting random seed to: ",self.seed)
+        torch.manual_seed(self.seed)
+        torch.cuda.manual_seed(self.seed)
+        
+        try:
+            random.seed(self.seed)
+        except NameError:
+            import random
+            random.seed(self.seed)
+
+        np.random.seed(self.seed)
+        torch.backends.cudnn.deterministic=True
+        
+        
+class MyCheckpoint(TrainEndCheckpoint):
+	def on_train_begin(self, net, X, y, **kwargs):
+		self.fn_prefix = 'train_end_' + str(id(X))

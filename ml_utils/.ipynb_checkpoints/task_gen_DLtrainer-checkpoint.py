@@ -8,7 +8,7 @@ reload(gait_data_loader)
 from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
-from ml_utils.DLutils import save_model, load_model
+from ml_utils.DLutils import save_model, load_model, FixRandomSeed
 
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
@@ -124,8 +124,10 @@ class GaitTrainer():
             optimizer=torch.optim.Adam,
             device = device_,
             iterator_train__shuffle=True,
+            train_split = skorch.dataset.CVSplit(5, random_state = 0), 
             batch_size= -1, #Batch size = -1 means full data at once 
             callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
+            (FixRandomSeed()),
             #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = True, name = "train_acc")),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = False, name = "valid_acc"))
