@@ -29,7 +29,10 @@ class GaitDataset(Dataset_skorch):
         #Reading the labels file
         self.all_labels = pd.read_csv(labels_csv, index_col = 0)
         #Retaining only the labels dataframe for framework and PIDs of interest and resetting the index
-        self.reduced_labels = self.all_labels[self.all_labels.scenario == framework][self.all_labels.PID.isin(pids_retain)].reset_index()
+        if type(framework) is str:
+            self.reduced_labels = self.all_labels[self.all_labels.scenario == framework][self.all_labels.PID.isin(pids_retain)].reset_index()
+        else: #List type 
+            self.reduced_labels = self.all_labels[self.all_labels.scenario.isin(framework)][self.all_labels.PID.isin(pids_retain)].reset_index()
         #Setting the labels with index as the key and PID along with to use when computing subject wise evaluation metrics
         self.labels = self.reduced_labels[['PID', 'label', 'key']].set_index('key')
         self.len = len(self.labels) #Length of the data to use

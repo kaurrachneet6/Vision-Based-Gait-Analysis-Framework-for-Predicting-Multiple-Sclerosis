@@ -8,7 +8,7 @@ reload(gait_data_loader)
 from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
-from ml_utils.DLutils import save_model, load_model, design, custom_StandardScaler
+from ml_utils.DLutils import save_model, load_model, design, custom_StandardScaler, MyCheckpoint, FixRandomSeed
 
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
@@ -16,7 +16,7 @@ class GaitTrainer():
         self.data_path = self.parameter_dict['path'] + self.parameter_dict['data_path']
         self.labels_file = self.parameter_dict['path'] + self.parameter_dict['labels_file']    
         self.labels = pd.read_csv(self.labels_file, index_col = 0)
-        self.framework = self.parameter_dict['framework'] #Defining the framework of interest
+        self.framework = self.parameter_dict['framework'] #Defining the framework of interest #'task_and_subject_WtoWT'
         self.train_framework = self.parameter_dict['train_framework']
         self.test_framework = self.parameter_dict['test_framework']
         self.hyperparameter_grid = hyperparameter_grid
@@ -24,7 +24,6 @@ class GaitTrainer():
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path
-        self.re_train_epochs = self.parameter_dict['re_train_epochs']
         
         
     def extract_train_test_common_PIDs(self):
@@ -71,7 +70,625 @@ class GaitTrainer():
         print ('Subjects only in test framework: ', self.test_pids)    
         
 
+    def compute_train_test_indices_split(self, n_splits_ = 5):
+        '''
+        For task+subject generalization framework, since our train and test indices are custom made, i.e. train indices are from
+        trial W and test indices are from trial WT. Further, since 7 subjects only exist in trial W, we include them only in 
+        training indices and 1 subject only exists in trial WT, we include them only in testing indices. For other 25 common
+        subjects we do stratified group five fold cross validation based on subject PIDs and thus no same subject can have strides 
+        both in training and in validation sets. We add the strides from 7 only training subjects to strides assigned via CV to training
+        and similarly add the strides from 1 only testing subject to strides assigned via CV to testing. Thus the training only and 
+        testing only strides remain common in all folds. 
+        Arguments:
+            train_test_concatenated: the concatendated dataframe with both training and testing strides appended 
+            X_train_common: X (including 91 features) for training set with common PIDs only 
+            Y_train_common: Y (labels) for training set with common PIDs only 
+            train_pids: PIDs for subjects that only exist in training 
+            test_pids: PIDs for subjects that only exist in testing 
+            train_framework: training task 
+            test_framework: testing task 
+        Returns:
+            train_indices: list of lists of .iloc indices for training folds 
+            test_indices: list of lists of .iloc indices for testing folds 
+        '''
+        #List to append lists of training and test indices for each CV fold
+        self.train_indices, self.test_indices = [], []
+        #PIDs define the groups for stratified group 5-fold CV
+        groups_ = self.Y_train_common['PID']
 
+        #We use stratified group K-fold to sample our strides data
+        gkf = StratifiedGroupKFold(n_splits=n_splits_) 
+
+        #Indices for strides of subjects that exist only in training set 
+        train_only_indices = self.train_test_concatenated[(self.train_test_concatenated.PID.isin(self.train_pids)) \
+                                                     & (self.train_test_concatenated.scenario==self.train_framework)].index
+        #Indices for strides of subjects that exist only in testing set 
+        test_only_indices = self.train_test_concatenated[(self.train_test_concatenated.PID.isin(self.test_pids)) \
+                                                     & (self.train_test_concatenated.scenario==self.test_framework)].index
+
+        #Computing the CV fold indices for common subjects in training and testing 
+        for idx, (train_idx, test_idx) in enumerate(gkf.split(self.X_train_common, self.Y_train_common['label'], groups=groups_)):
+#             print ('In fold: ', idx)
+            #PIDs for train indices using Stratified group 5-fold split
+            train_split_pids = groups_.iloc[train_idx].unique()
+#             print ('train_pids', train_split_pids)
+            #Indices for training using CV split in each fold 
+            train_split_indices = self.train_test_concatenated[(self.train_test_concatenated.PID.isin(train_split_pids)) \
+                                                         & (self.train_test_concatenated.scenario==self.train_framework)].index
+            #Concatenating the indices of strides for PIDs in training only and CV split training PIDs 
+            train_split_indices = train_split_indices.union(train_only_indices)
+        #     print (train_split_indices, train_split_indices.shape)
+            #Appending the training indices for the current fold 
+            self.train_indices.append(train_split_indices)
+
+            #PIDs for test indices using Stratified group 5-fold split
+            test_split_pids = groups_.iloc[test_idx].unique()
+#             print ('test_pids', test_split_pids)
+            #Indices for testing using CV split in each fold 
+            test_split_indices = self.train_test_concatenated[(self.train_test_concatenated.PID.isin(test_split_pids)) \
+                                                         & (self.train_test_concatenated.scenario==self.test_framework)].index
+            #Concatenating the indices of strides for PIDs in testing only and CV split testing PIDs 
+            test_split_indices = test_split_indices.union(test_only_indices)
+        #     print (test_split_indices, test_split_indices.shape)
+            #Appending the testing indices for the current fold 
+            self.test_indices.append(test_split_indices)
+
+        #Computing the .iloc indices from the .loc indices of the training and testing strides 
+        self.train_indices = [self.train_test_concatenated.reset_index().index[self.train_test_concatenated.index.isin(self.train_indices[i])] for i in range(len(self.train_indices))]
+        self.test_indices = [self.train_test_concatenated.reset_index().index[self.train_test_concatenated.index.isin(self.test_indices[i])] for i in range(len(self.test_indices))]
+
+
+    def create_folder_for_results(self):
+        #Create folder for saving results
+        time_now = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_%f")
+        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"\\"
+        print("save path: ", self.save_path)
+        os.mkdir(self.save_path)
+        #Copy config file to results folder
+        with open(self.config_path, 'rb') as src, open(self.save_path+"config.json", 'wb') as dst: dst.write(src.read())
+
+            
+    def create_model(self, model, device_):
+        '''
+        Creates Skorch model
+        Arguments:
+            device: cuda if GPU is available or cpu 
+        Returns:
+            Created skorch network
+        '''
+        net = NeuralNet(
+            model,
+            max_epochs = 2,
+            lr = .0001,
+            criterion=nn.CrossEntropyLoss,
+            optimizer=torch.optim.Adam,
+            device = device_,
+            iterator_train__shuffle=True,
+            train_split = skorch.dataset.CVSplit(5, random_state = 0), 
+            batch_size= -1, #Batch size = -1 means full data at once 
+            callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
+            (FixRandomSeed()), 
+            #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
+            (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = True, name = "train_acc")),
+            (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = False, name = "valid_acc")),
+            (MyCheckpoint(f_params='params.pt', f_optimizer='optimizer.pt', f_criterion='criterion.pt', f_history='history.json', f_pickle=None, fn_prefix='train_end_', dirname= self.save_path)),
+#             (PrintLog(keys_ignored=None))
+                      ]
+        )
+        return net
+    
+    
+    def accuracy_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the accuracy using the softmax probabilities predicted via skorch neural net in a cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            accuracy 
+        '''
+        self.y_pred = net.predict(X)
+#         print ('In accuracy y_pred: ', y_pred)
+        self.y_true_label = y
+        self.y_pred_label = self.y_pred.argmax(axis = 1)
+#         print ('In accuracy y pred label: ', self.y_pred_label)
+        self.yoriginal.append(self.y_true_label)
+        self.ypredicted.append(self.y_pred_label)
+        accuracy = accuracy_score(self.y_true_label, self.y_pred_label)
+        return accuracy
+
+    
+    def precision_macro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the precision_macro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            precision macro
+        '''
+        precision_macro = precision_score(self.y_true_label, self.y_pred_label, average = 'macro')
+        return precision_macro
+    
+    
+    def precision_micro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the precision micro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            precision micro
+        '''
+        precision_micro = precision_score(self.y_true_label, self.y_pred_label, average = 'micro')
+        return precision_micro
+        
+    def precision_weighted_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the precision weighted using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            precision weighted
+        '''
+        precision_weighted = precision_score(self.y_true_label, self.y_pred_label, average = 'weighted')
+        return precision_weighted
+ 
+    def recall_macro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the recall macro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            recall macro
+        '''
+        recall_macro = recall_score(self.y_true_label, self.y_pred_label, average = 'macro')
+        return recall_macro
+    
+    
+    def recall_micro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the recall micro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            recall micro
+        '''
+        recall_micro = recall_score(self.y_true_label, self.y_pred_label, average = 'micro')
+        return recall_micro
+        
+    def recall_weighted_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the recall weighted using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            recall weighted
+        '''
+        recall_weighted = recall_score(self.y_true_label, self.y_pred_label, average = 'weighted')
+        return recall_weighted
+   
+    def f1_macro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the f1 macro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            f1 macro
+        '''
+        f1_macro = f1_score(self.y_true_label, self.y_pred_label, average = 'macro')
+        return f1_macro
+    
+    
+    def f1_micro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the f1 micro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            f1 micro
+        '''
+        f1_micro = f1_score(self.y_true_label, self.y_pred_label, average = 'micro')
+        return f1_micro
+        
+    def f1_weighted_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the f1 weighted using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            f1 weighted
+        '''
+        f1_weighted = f1_score(self.y_true_label, self.y_pred_label, average = 'weighted')
+        return f1_weighted
+    
+    def auc_macro_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the auc macro using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            auc macro
+        '''
+        auc_macro = roc_auc_score(self.y_true_label, self.y_pred, average = 'macro', multi_class = 'ovo')
+        return auc_macro
+    
+
+    def auc_weighted_score_multi_class_cv(self, net, X, y):
+        '''
+        Function to compute the auc weighted using the softmax probabilities predicted via skorch neural net in a 
+        cross validation type setting 
+        Arguments:
+            net: skorch model
+            X: data 
+            y: true target labels
+        Returns:
+            auc weighted
+        '''
+        auc_weighted = roc_auc_score(self.y_true_label, self.y_pred, average = 'weighted', multi_class = 'ovo')
+        return auc_weighted
+    
+    
+    def evaluate(self, n_splits_ = 5):
+        '''
+        Arguments: 
+            trained model, test set, true and predicted labels for test set, framework and model name 
+            save_results: Whether to save the results or not 
+        Returns: 
+            predicted probabilities and labels for each class, stride and subject based evaluation metrics 
+        Saves the csv files for stride wise predictions and subject wise predictions for confusion matrix 
+        '''
+        #For creating the stride wise confusion matrix, we append the true and predicted labels for strides in each fold to this 
+        #test_strides_true_predicted_labels dataframe 
+        test_strides_true_predicted_labels = pd.DataFrame()
+        #For creating the subject wise confusion matrix, we append the true and predicted labels for subjects in each fold to this
+        #test_subjects_true_predicted_labels dataframe
+        self.test_subjects_true_predicted_labels = pd.DataFrame()
+
+        best_index = self.grid_search.cv_results_['mean_test_accuracy'].argmax()
+        self.best_params = self.grid_search.cv_results_['params'][best_index]
+        print('best_params: ', self.best_params)
+
+        if self.save_results:
+            best_params_file = open(self.save_path + "best_parameters.txt","w") 
+            best_params_file.write(str(self.best_params))
+            best_params_file.close() 
+            
+        #Count of parameters in the selected model
+#         print ('Module: ', self.pipe.set_params(**self.best_params)['net'].module)
+        self.total_parameters = sum(p.numel() for p in self.pipe.set_params(**self.best_params)['net'].module.parameters())     
+        self.trainable_params =  sum(p.numel() for p in self.pipe.set_params(**self.best_params)['net'].module.parameters() if p.requires_grad)
+        self.nontrainable_params = self.total_parameters - self.trainable_params
+        trueY_df = pd.DataFrame(data = np.array((self.PID_sl, self.Y_sl_)).T, columns = ['PID', 'label'])
+        person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_weighted = [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+
+        class_wise_scores = {'precision_class_wise': [], 'recall_class_wise': [], 'f1_class_wise': []}
+
+        for i in range(n_splits_):
+            #For each fold, there are 2 splits: test and train (in order) and we need to retrieve the index 
+            #of only test set for required 5 folds (best index)
+            temp = trueY_df.loc[self.yoriginal[(best_index*n_splits_) + (i)].index] #True labels for the test strides in each fold
+            temp['pred'] = self.ypredicted[(best_index*n_splits_) + (i)] #Predicted labels for the strides in the test set in each fold
+    #         display('temp', temp)
+    #         print ('temp_pred', temp['pred'])
+            #Appending the test strides' true and predicted label for each fold to compute stride-wise confusion matrix 
+            test_strides_true_predicted_labels = test_strides_true_predicted_labels.append(temp)
+
+            x = temp.groupby('PID')['pred'].value_counts().unstack()
+    #         print ('x', x)
+            #Input for subject wise AUC is probabilities at columns [0, 1, 2]
+            proportion_strides_correct = pd.DataFrame(columns = [0, 1, 2])
+            probs_stride_wise = x.divide(x.sum(axis = 1), axis = 0).fillna(0)
+            proportion_strides_correct[probs_stride_wise.columns] = probs_stride_wise
+            proportion_strides_correct.fillna(0, inplace=True)
+            proportion_strides_correct['True Label'] = trueY_df.groupby('PID').first()
+            #Input for precision, recall and F1 score
+            proportion_strides_correct['Predicted Label'] = proportion_strides_correct[[0, 1, 2]].idxmax(axis = 1) 
+            #Appending the test subjects' true and predicted label for each fold to compute subject-wise confusion matrix 
+            self.test_subjects_true_predicted_labels = self.test_subjects_true_predicted_labels.append(proportion_strides_correct)          
+
+            #Class-wise metrics for stride evaluation metrics 
+            class_wise_scores['precision_class_wise'].append(precision_score(temp['label'], temp['pred'], average = None))
+            class_wise_scores['recall_class_wise'].append(recall_score(temp['label'], temp['pred'], average = None))
+            class_wise_scores['f1_class_wise'].append(f1_score(temp['label'], temp['pred'], average = None))
+
+            #Person wise metrics for each fold 
+            person_acc.append(accuracy_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label']))
+            person_p_macro.append(precision_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                           average = 'macro'))
+            person_p_micro.append(precision_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                           average = 'micro'))
+            person_p_weighted.append(precision_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                           average = 'weighted'))
+            person_p_class_wise.append(precision_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                           average = None))
+
+            person_r_macro.append(recall_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                        average = 'macro'))
+            person_r_micro.append(recall_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                        average = 'micro'))
+            person_r_weighted.append(recall_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                        average = 'weighted'))
+            person_r_class_wise.append(recall_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                        average = None))
+
+            person_f1_macro.append(f1_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                      average = 'macro'))
+            person_f1_micro.append(f1_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                      average = 'micro'))
+            person_f1_weighted.append(f1_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                      average = 'weighted'))
+            person_f1_class_wise.append(f1_score(proportion_strides_correct['Predicted Label'], proportion_strides_correct['True Label'], \
+                                      average = None))
+
+            person_auc_macro.append(roc_auc_score(proportion_strides_correct['True Label'], proportion_strides_correct[[0, 1, 2]], \
+                                            multi_class = 'ovo', average= 'macro'))
+            person_auc_weighted.append(roc_auc_score(proportion_strides_correct['True Label'], proportion_strides_correct[[0, 1, 2]], \
+                                            multi_class = 'ovo', average= 'weighted'))
+
+        #Mean and standard deviation for person-based metrics 
+        person_means = [np.mean(person_acc), np.mean(person_p_macro), np.mean(person_p_micro), np.mean(person_p_weighted), list(map(mean, zip(*person_p_class_wise))), np.mean(person_r_macro), np.mean(person_r_micro), np.mean(person_r_weighted), list(map(mean, zip(*person_r_class_wise))), np.mean(person_f1_macro), np.mean(person_f1_micro), np.mean(person_f1_weighted), list(map(mean, zip(*person_p_class_wise))), np.mean(person_auc_macro), np.mean(person_auc_weighted)]
+
+        person_stds = [np.std(person_acc), np.std(person_p_macro), np.std(person_p_micro), np.std(person_p_weighted), list(map(stdev, zip(*person_p_class_wise))), np.std(person_r_macro), np.std(person_r_micro), np.std(person_r_weighted), list(map(stdev, zip(*person_r_class_wise))), np.std(person_f1_macro), np.std(person_f1_micro), np.std(person_f1_weighted), list(map(stdev, zip(*person_p_class_wise))), np.std(person_auc_macro), np.std(person_auc_weighted)]
+
+            #Stride-wise metrics 
+        stride_metrics_mean, stride_metrics_std = [], [] #Mean and SD of stride based metrics - Acc, P, R, F1, AUC (in order)
+        scores = {'accuracy': self.accuracy_score_multi_class_cv, 'precision_macro': self.precision_macro_score_multi_class_cv, 'precision_micro': self.precision_micro_score_multi_class_cv, 'precision_weighted': self.precision_weighted_score_multi_class_cv, 'precision_class_wise':[], 'recall_macro': self.recall_macro_score_multi_class_cv, 'recall_micro': self.recall_micro_score_multi_class_cv, 'recall_weighted': self.recall_weighted_score_multi_class_cv, 'recall_class_wise': [], 'f1_macro': self.f1_macro_score_multi_class_cv, 'f1_micro': self.f1_micro_score_multi_class_cv, 'f1_weighted': self.f1_weighted_score_multi_class_cv, 'f1_class_wise': [], 'auc_macro': self.auc_macro_score_multi_class_cv, 'auc_weighted': self.auc_weighted_score_multi_class_cv}
+
+        for score in scores:
+            try:
+                stride_metrics_mean.append(self.grid_search.cv_results_['mean_test_'+score][best_index])
+                stride_metrics_std.append(self.grid_search.cv_results_['std_test_'+score][best_index])
+            except:
+                stride_metrics_mean.append(list(map(mean, zip(*class_wise_scores[score]))))
+                stride_metrics_std.append(list(map(stdev, zip(*class_wise_scores[score]))))
+        print('\nStride-based model performance (mean): ', stride_metrics_mean)
+        print('\nStride-based model performance (standard deviation): ', stride_metrics_std)
+
+        print('\nPerson-based model performance (mean): ', person_means)
+        print('\nPerson-based model performance (standard deviation): ', person_stds)
+
+        #Saving the stride and person wise true and predicted labels for calculating the 
+        #stride and subject wise confusion matrix for each model
+        if self.save_results:
+            test_strides_true_predicted_labels.to_csv(self.save_path  + 'stride_wise_predictions_' + self.framework + '.csv')
+            self.test_subjects_true_predicted_labels.to_csv(self.save_path + 'person_wise_predictions_' + self.framework + '.csv')
+
+        #Plotting and saving the sequence and subject wise confusion matrices 
+        #Sequence wise confusion matrix
+        plt.figure()
+        confusion_matrix = pd.crosstab(test_strides_true_predicted_labels['label'], test_strides_true_predicted_labels['pred'], \
+                                   rownames=['Actual'], colnames=['Predicted'], margins = True)
+        sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu", fmt = 'd')
+        if self.save_results:
+            plt.savefig(self.save_path  + '\\CFmatrix_cross_generalize_' + self.framework + '_stride_wise.png', dpi = 350)
+        plt.show()
+
+        #Plotting and saving the subject wise confusion matrix 
+        plt.figure()
+        confusion_matrix = pd.crosstab(self.test_subjects_true_predicted_labels['True Label'], self.test_subjects_true_predicted_labels['Predicted Label'], \
+                                       rownames=['Actual'], colnames=['Predicted'], margins = True)
+        sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu")
+        if self.save_results:
+            plt.savefig(self.save_path  +'CFmatrix_cross_generalize_' + self.framework + '.png', dpi = 350)
+        plt.show()    
+        
+        
+        stride_person_metrics = [stride_metrics_mean, stride_metrics_std, person_means, person_stds, [self.training_time], [self.best_params], [self.total_parameters], [self.trainable_params], [self.nontrainable_params]]
+        
+        self.metrics = pd.DataFrame(columns = [self.save_results_prefix]) #Dataframe to store accuracies for each ML model for raw data 
+        self.metrics[self.save_results_prefix] = sum(stride_person_metrics, [])
+        stride_scoring_metrics = ['stride_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
+                 'stride_precision_class_wise', 'stride_recall_macro', 'stride_recall_micro', \
+                 'stride_recall_weighted', 'stride_recall_class_wise', \
+                 'stride_F1_macro', 'stride_F1_micro', 'stride_F1_weighted', 'stride_F1_class_wise', \
+                 'stride_AUC_macro', 'stride_AUC_weighted']
+        person_scoring_metrics = ['person_accuracy', 'person_precision_macro', 'person_precision_micro', \
+                 'person_precision_weighted', 'person_precision_class_wise', 'person_recall_macro', 'person_recall_micro', \
+                 'person_recall_weighted', 'person_recall_class_wise', \
+                 'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
+                 'person_AUC_macro', 'person_AUC_weighted']   
+        self.metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params']
+    
+        #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
+        if self.save_results:
+            self.metrics.to_csv(self.save_path + 'cross_generalize_'+self.framework+'_result_metrics.csv')
+
+            
+    #ROC curves 
+    def plot_ROC(self):
+        '''
+        Function to plot the ROC curve and confusion matrix for model given in ml_model name 
+        Input: ml_models (name of models to plot the ROC for),  test_Y (true test set labels with PID), 
+            predicted_probs_person (predicted test set probabilities for all 3 classes - HOA/MS/PD), framework (WtoWT / VBWtoVBWT)
+        Plots and saves the ROC curve with individual class-wise plots and micro/macro average plots 
+        '''
+        n_classes = 3 #HOA/MS/PD
+        cohort = ['HOA', 'MS', 'PD']
+        #Binarizing/getting dummies for the true labels i.e. class 1 is represented as 0, 1, 0
+        test_features_binarize = pd.get_dummies(self.test_subjects_true_predicted_labels['True Label'].values)     
+        sns.despine(offset=0)
+        linestyles = ['-', '-', '-', '-.', '--', '-', '--', '-', '--']
+        colors = ['b', 'magenta', 'cyan', 'g',  'red', 'violet', 'lime', 'grey', 'pink']
+
+        fig, axes = plt.subplots(1, 1, sharex=True, sharey = True, figsize=(6, 4.5))
+        axes.plot([0, 1], [0, 1], linestyle='--', label='Majority (AUC = 0.5)', linewidth = 3, color = 'k')
+        # person-based prediction probabilities for class 0: HOA, 1: MS, 2: PD
+
+        # Compute ROC curve and ROC area for each class
+        tpr, fpr, roc_auc = dict(), dict(), dict()
+        for i in range(n_classes): #n_classes = 3
+            fpr[i], tpr[i], _ = roc_curve(test_features_binarize.iloc[:, i], self.test_subjects_true_predicted_labels.loc[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+            #Plotting the ROCs for the three classes separately
+            axes.plot(fpr[i], tpr[i], label = cohort[i] +' ROC (AUC = '+ str(round(roc_auc[i], 3))
+                +')', linewidth = 3, alpha = 0.8, linestyle = linestyles[i], color = colors[i])
+
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = roc_curve(test_features_binarize.values.ravel(),\
+                                                  self.test_subjects_true_predicted_labels[[0, 1, 2]].values.ravel())
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+        #Plotting the micro average ROC 
+        axes.plot(fpr["micro"], tpr["micro"], label= 'micro average ROC (AUC = '+ str(round(roc_auc["micro"], 3))
+                +')', linewidth = 3, alpha = 0.8, linestyle = linestyles[3], color = colors[3])
+
+        #Compute the macro-average ROC curve and AUC value
+        all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)])) # First aggregate all false positive rates
+        mean_tpr = np.zeros_like(all_fpr) # Then interpolate all ROC curves at this points
+        for i in range(n_classes):
+            mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+        mean_tpr /= n_classes  # Finally average it and compute AUC
+        fpr["macro"] = all_fpr
+        tpr["macro"] = mean_tpr
+        #Macro average AUC of ROC value 
+        roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])    
+        #Plotting the macro average AUC
+        axes.plot(fpr["macro"], tpr["macro"], label= 'macro average ROC (AUC = '+ str(round(roc_auc["macro"], 3))
+            +')', linewidth = 3, alpha = 0.8, linestyle = linestyles[4], color = colors[4])
+
+        axes.set_ylabel('True Positive Rate')
+        axes.set_title('Cross generalization '+ self.framework)
+        plt.legend()
+        # axes[1].legend(loc='upper center', bbox_to_anchor=(1.27, 1), ncol=1)
+
+        axes.set_xlabel('False Positive Rate')
+        plt.tight_layout()
+        if self.save_results:
+            plt.savefig(self.save_path+ 'ROC_cross_generalize_' + self.framework +  '_'+ self.save_results_prefix  + '.png', dpi = 350)
+        plt.show()
+    
+    
+    
+    #Main training paradigm 
+    def train(self, n_splits_ = 5):
+        '''
+        Tunes and trains skorch model for task generalization
+        Arguments:
+            model: Skorch model
+            fullTrainLabelsList: List of training data labels and PIDs
+            trainStridesList_norm: Normlized list of training sequences
+            params: List of hyperparameters to optimize across
+        Returns:
+            Trained and tuned grid search object
+        '''        
+        self.X_sl_ = [x for x in self.X_sl]
+#         print ('X format: ', self.X_sl_train_[0])
+        self.Y_sl_ = [int(y) for y in self.Y_sl]
+#         print ('In train, Y unique', np.unique(self.Y_sl_), 'length = ', len(self.Y_sl_))
+        self.PID_sl_ = [int(pid) for pid in self.PID_sl]
+        
+#         print ('Shuffled PID and Y:', self.PID_sl_, self.Y_sl_)        
+        self.yoriginal, self.ypredicted = [], []
+        self.pipe = Pipeline([('scale', custom_StandardScaler()), ('net', self.model)])
+        self.scores = {'accuracy': self.accuracy_score_multi_class_cv, 'precision_macro': self.precision_macro_score_multi_class_cv, 'precision_micro': self.precision_micro_score_multi_class_cv, 'precision_weighted': self.precision_weighted_score_multi_class_cv, 'recall_macro': self.recall_macro_score_multi_class_cv, 'recall_micro': self.recall_micro_score_multi_class_cv, 'recall_weighted': self.recall_weighted_score_multi_class_cv, 'f1_macro': self.f1_macro_score_multi_class_cv, 'f1_micro': self.f1_micro_score_multi_class_cv, 'f1_weighted': self.f1_weighted_score_multi_class_cv, 'auc_macro': self.auc_macro_score_multi_class_cv, 'auc_weighted': self.auc_weighted_score_multi_class_cv}
+        
+        self.grid_search = GridSearchCV(self.pipe, param_grid = self.hyperparameter_grid, scoring = self.scores\
+                           , n_jobs = 1, cv = zip(self.train_indices, self.test_indices), refit=False)
+        print("grid search", self.grid_search)
+
+#         print("Cross val split PIDs:\n")
+#         for idx, (train, test) in enumerate(zip(self.train_indices, self.test_indices)):
+#             print ('\nFold: ', idx+1)
+#             print ('\nIndices in train: ', train, '\nIndices in test: ', test)
+#             print('\nPIDs in TRAIN: ', np.unique(self.PID_sl[train], axis=0), '\nPIDs in TEST: ', \
+#                   np.unique(self.PID_sl[test], axis=0))
+#             print('\nY in TRAIN: ', pd.Series(self.Y_sl)[train], '\nY in TEST: ', \
+#                   pd.Series(self.Y_sl)[test])          
+#             print ('**************************************************************')
+
+        #Skorch callback history to get loss to plot
+        start_time = time.time()
+        self.grid_search.fit(self.X_sl, pd.Series(self.Y_sl))
+        end_time = time.time()
+        self.training_time = end_time - start_time
+        print("\nTraining/ Cross validation time: ", self.training_time)
+        
+   
+
+    #Learning curves     
+    def learning_curves(self):
+        '''
+        To plot the training/validation loss and accuracy (stride-wise) curves over epochs across the n_splits folds 
+        '''
+        best_index = self.grid_search.cv_results_['mean_test_accuracy'].argmax()
+        self.best_params = self.grid_search.cv_results_['params'][best_index]
+        pipe_optimized = self.pipe.set_params(**self.best_params)
+        #List of history dataframes over n_splits folds 
+        histories = []     
+        
+        for fold, (train_ix, val_ix) in enumerate(zip(self.train_indices, self.test_indices)):
+            # select rows for train and test
+            trainX, trainY, valX, valY = self.X_sl[train_ix], self.Y_sl[train_ix], self.X_sl[val_ix], self.Y_sl[val_ix]
+            # fit model
+            pipe_optimized.fit(trainX, trainY)
+            history_fold = pd.DataFrame(pipe_optimized['net'].history)
+#             print ('History for fold', fold+1, '\n')
+#             display(history_fold)
+            if self.save_results:
+                history_fold.to_csv(self.save_path + 'history_fold_' + str(fold+1) + '.csv')
+            histories.append(history_fold)
+          
+            for idx in range(len(histories)):
+                model_history = histories[idx]
+                epochs = model_history['epoch'].values #start from 1 instead of zero
+                train_loss = model_history['train_loss'].values
+        #         print (train_loss)
+                valid_loss = model_history['valid_loss'].values
+                train_acc = model_history['train_acc'].values
+                valid_acc = model_history['valid_acc'].values
+                #print("epochs", epochs, len(epochs))
+                #print("train_acc", train_acc, len(train_acc))
+                #print("train_loss", train_loss, len(train_loss))
+                #print("valid_loss", valid_loss, len(valid_loss))
+                plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
+                plt.plot(epochs,valid_loss,'r*-');
+                try:
+                    plt.plot(epochs,train_acc,'bo--');
+                except:
+                    plt.plot(epochs,train_acc[:-1],'bo-');
+                #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
+                plt.plot(epochs,valid_acc, 'mo-');
+        plt.title('Training/Validation loss and accuracy Curves');
+        plt.xlabel('Epochs');
+        plt.ylabel('Cross entropy loss/Accuracy');
+        plt.legend(['Train loss','Validation loss', 'Train Accuracy', 'Validation Accuracy']); 
+        if self.save_results:
+            plt.savefig(self.save_path + 'learning_curve', dpi = 350)
+        plt.show()
+        plt.close()
+        
+        
+        
+    #Main setup
     def cross_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5):
         self.extract_train_test_common_PIDs()
         design()
@@ -120,5 +737,39 @@ class GaitTrainer():
         print('Strides in trial WT in each cohort of subjects common to trials W and WT: ', len(self.test_trial_test_commonPID))
         print ('HOA, MS and PD strides in trial WT of subjects common to trials W and WT:\n', self.test_trial_test_commonPID['cohort'].value_counts())
         design()
+
+        self.X_train_common = self.train_trial_train_commonPID.drop(['PID', 'label'], axis = 1)
+        self.Y_train_common = self.train_trial_train_commonPID[['PID', 'label']]
+
+        self.train_test_concatenated = self.labels[self.labels.scenario.isin([self.train_framework, self.test_framework])].reset_index().drop('index', axis = 1)    
+        
+        #Get dataloader 
+        #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
+        self.data = GaitDataset(self.data_path, self.labels_file, self.train_test_concatenated['PID'].unique(), framework = [self.train_framework, self.test_framework])
+        #Computing the X (91 features), Y (PID, label) for the models 
+        self.X_sl = SliceDataset(self.data, idx = 0)
+        self.Y_sl = SliceDataset(self.data, idx = 1)
+        self.PID_sl = SliceDataset(self.data, idx = 2)
+        print ('Shapes', self.train_test_concatenated.shape, self.X_sl.shape, self.Y_sl.shape) #1176+1651
+        
+        #Shuffling the concatenated data
+        self.train_test_concatenated, self.X_sl, self.Y_sl, self.PID_sl = shuffle(self.train_test_concatenated, self.X_sl, self.Y_sl, self.PID_sl, random_state = 0) 
+        
+        #Computing the training and test set indices for the CV folds         
+        self.compute_train_test_indices_split(n_splits_)
+        self.create_folder_for_results() 
+        self.torch_model = model_
+        if self.parameter_dict['behavior'] == 'train':
+            self.model = self.create_model(self.torch_model, device_)            
+            self.train(n_splits_)
+            cv_results = pd.DataFrame(self.grid_search.cv_results_)
+            if self.save_results:
+                cv_results.to_csv(self.save_path+"cv_results.csv")
+            self.learning_curves()    
+        self.evaluate(n_splits_) 
+        self.plot_ROC() 
+
+        
+
 
         

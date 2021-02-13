@@ -64,6 +64,7 @@ class GaitTrainer():
         with open(self.config_path, 'rb') as src, open(self.save_path+"config.json", 'wb') as dst: dst.write(src.read())
 
     
+    
     def create_model(self, model, device_):
         '''
         Creates Skorch model
@@ -94,6 +95,7 @@ class GaitTrainer():
         return net
             
     
+    
     def accuracy_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the accuracy using the softmax probabilities predicted via skorch neural net in a cross validation type setting 
@@ -117,6 +119,7 @@ class GaitTrainer():
 #         print ('current accuracy: ', accuracy)
         return accuracy
 
+    
     def precision_macro_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the precision_macro using the softmax probabilities predicted via skorch neural net in a 
@@ -130,6 +133,7 @@ class GaitTrainer():
         '''
         precision_macro = precision_score(self.y_true_label, self.y_pred_label, average = 'macro')
         return precision_macro
+    
     
     
     def precision_micro_score_multi_class_cv(self, net, X, y):
@@ -146,6 +150,7 @@ class GaitTrainer():
         precision_micro = precision_score(self.y_true_label, self.y_pred_label, average = 'micro')
         return precision_micro
         
+    
     def precision_weighted_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the precision weighted using the softmax probabilities predicted via skorch neural net in a 
@@ -160,6 +165,8 @@ class GaitTrainer():
         precision_weighted = precision_score(self.y_true_label, self.y_pred_label, average = 'weighted')
         return precision_weighted
  
+    
+    
     def recall_macro_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the recall macro using the softmax probabilities predicted via skorch neural net in a 
@@ -173,6 +180,7 @@ class GaitTrainer():
         '''
         recall_macro = recall_score(self.y_true_label, self.y_pred_label, average = 'macro')
         return recall_macro
+    
     
     
     def recall_micro_score_multi_class_cv(self, net, X, y):
@@ -189,6 +197,7 @@ class GaitTrainer():
         recall_micro = recall_score(self.y_true_label, self.y_pred_label, average = 'micro')
         return recall_micro
         
+    
     def recall_weighted_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the recall weighted using the softmax probabilities predicted via skorch neural net in a 
@@ -203,6 +212,7 @@ class GaitTrainer():
         recall_weighted = recall_score(self.y_true_label, self.y_pred_label, average = 'weighted')
         return recall_weighted
    
+    
     def f1_macro_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the f1 macro using the softmax probabilities predicted via skorch neural net in a 
@@ -232,6 +242,7 @@ class GaitTrainer():
         f1_micro = f1_score(self.y_true_label, self.y_pred_label, average = 'micro')
         return f1_micro
         
+    
     def f1_weighted_score_multi_class_cv(self, net, X, y):
         '''
         Function to compute the f1 weighted using the softmax probabilities predicted via skorch neural net in a 
@@ -245,6 +256,7 @@ class GaitTrainer():
         '''
         f1_weighted = f1_score(self.y_true_label, self.y_pred_label, average = 'weighted')
         return f1_weighted
+    
     
     def auc_macro_score_multi_class_cv(self, net, X, y):
         '''

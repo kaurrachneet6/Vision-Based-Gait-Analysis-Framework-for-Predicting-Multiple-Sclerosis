@@ -1,26 +1,24 @@
 '''
 ## Gait Video Study 
-### 1D Convolutional neural network (CNN) on subject generalization frameworks, namely a) W, b) WT, c) VBW and d) VBWT,  to classify HOA/MS/PD strides and subjects using cross validation 
+### 1D Convolutional neural network (CNN) on task+subject generalization together frameworks, namely a) train on some subjects in W-> test on separate set of subjects in WT and b) train on some subjects in VBW-> test on separate set of subjects in VBWT to classify HOA/MS/PD strides and subjects 
 #### Remember to add the original count of frames in a single stride (before down sampling via smoothing) for each stride as an additional artificial feature to add information about speed of the subject to the model
+
 1. Save the optimal hyperparameters, confusion matrices and ROC curves for each algorithm.
 2. Make sure to not use x, y, z, confidence = 0, 0, 0, 0 as points for the model since they are simply missing values and not data points, so make sure to treat them before inputting to model 
 3. Make sure to normalize (z-score normalization) the features before we feed them to the model.
-4. We use Group 5-fold stratified cross validation for evaluation.
-5. Compare 1D CNN among the 4 sub-frameworks of subject generalization by retaining only common subjets across the 4 frameworks.
-6. Plot the training and testing loss vs. epochs and maybe training and testing accuracy vs. epochs. 
-7. Try both z-score and min-max normalizations. Compute the training data min (using bottom 1 percentile of training data ) and max (using top 1 percentile of training data) for min-max normalization to avoid extreme outliers influencing the min/max value for normalization.
-8. Try appending speed of stride in the begining along with 20x36 grid of body coordinates to process the label and appending speed after 20x36 grid is processed to a feature set represeting body coordinates and then using linear layers to process the label 
+4. For implementation of task+subject generalization together framework 1: i.e. train on some subjects in W and test on remaining separate set of subjects in WT,  since we have 32 subjects in training/W and 26 subjects in testing/WT and 25 subjects that are common in both W and WT. We always keep the (32-25) = 7 subjects only available in W in training and always keep (26-25) = 1 subject only available in WT in testing along with cross validation folds created for training and testing sets from the 25 common subjects in both. So, basically, for 5 fold cross validation on 25 common subjects, we train on 20 + 7 subjects and test on 5+1 subjects where these 20 and 5 subjects keep on changing with each fold, but the 7 and 1 subjects remain the same.
+5. We use stratified group 5 fold cross validation.
 '''
 
 from importlib import reload
 from ml_utils.imports import *
 
-from ml_utils import subject_gen_DLtrainer, DLutils, CNN1d_model, gait_data_loader
-reload(subject_gen_DLtrainer)
+from ml_utils import cross_gen_DLtrainer, DLutils, CNN1d_model, gait_data_loader
+reload(cross_gen_DLtrainer)
 reload(DLutils)
 reload(CNN1d_model)
 from ml_utils.DLutils import set_random_seed, accuracy_score_multi_class
-from ml_utils.subject_gen_DLtrainer import GaitTrainer
+from ml_utils.cross_gen_DLtrainer import GaitTrainer
 from ml_utils.CNN1d_model import CNN1D
 from ml_utils.gait_data_loader import GaitDataset
 
@@ -60,9 +58,8 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 in_chans = 20
 out_chans = 3
-dropout = 0.3
-model_class_ = CNN1D   
+dropout = 0.3 
 model_ = CNN1D (in_chans, out_chans, dropout)
 
 trainer = GaitTrainer(parameter_dict, hyperparameter_grid, config_path = args.config_path)
-trainer.subject_gen_setup(model_class_, model_, device_ = device, n_splits_ = 2)
+trainer.cross_gen_setup(model_, device_ = device, n_splits_ = 2)

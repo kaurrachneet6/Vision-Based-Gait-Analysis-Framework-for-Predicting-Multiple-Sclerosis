@@ -20,13 +20,13 @@ For skorch: Refer https://github.com/skorch-dev/skorch/issues/524, https://githu
 from importlib import reload
 from ml_utils.imports import *
 
-from ml_utils import task_gen_DLtrainer, DLutils, cnn1d_model
+from ml_utils import task_gen_DLtrainer, DLutils, CNN1d_model
 reload(task_gen_DLtrainer)
 reload(DLutils)
-reload(cnn1d_model)
+reload(CNN1d_model)
 from ml_utils.DLutils import set_random_seed
 from ml_utils.task_gen_DLtrainer import GaitTrainer
-from ml_utils.cnn1d_model import CNN1D
+from ml_utils.CNN1d_model import CNN1D
 
 #Set up vars for parsing
 hyperparameter_grid = {}
