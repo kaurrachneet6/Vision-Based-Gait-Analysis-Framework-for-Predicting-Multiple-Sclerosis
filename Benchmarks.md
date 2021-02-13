@@ -18,9 +18,9 @@
 
 * Subject generalization (W)
     * Stride-wise metrics: 
-        * Accuracy = 0.592$`\pm`$0.15 (AdaBoost)
-        * Precision Macro = 0.595$`\pm`$0.23 (AdaBoost), Precision Micro, Precision Weighted, Precision class wise
-        * Recall Macro = $`0.459\pm0.20`$ (Decision Tree), Recall Micro, Recall Weighted, Recall class wise
+        * Accuracy = 0.576$`\pm`$0.06 (Logistic Regression)
+        * Precision Macro = 0.565$`\pm`$0.06 (Logistic Regression), Precision Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Precision Weighted = 0.60 $`\pm`$ 0.07, Precision class wise = [0.68$`\pm`$0.10, 0.517$`\pm`$0.12, 0.497$`\pm`$0.13] (Logistic Regression)
+        * Recall Macro = $`\pm`$ (), Recall Micro, Recall Weighted, Recall class wise
         * F1 Macro = $`0.451\pm0.19`$ (AdaBoost), F1 Micro, F1 Weighted, F1 class wise 
         * AUC Macro = $`0.644\pm0.18`$ (AdaBoost), AUC Weighted 
     * Subject-wise metrics: 
