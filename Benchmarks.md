@@ -5,8 +5,15 @@
     * Stride-wise metrics: 
         * Accuracy = 0.8307 (XGBoost)
         * Precision Macro = 0.835 (XGBoost), Precision Micro = 0.8307 (XGBoost), Precision Weighted = 0.834 (XGBoost), Precision class wise = [0.774, 0.832, 0.899] (XGBoost)
-        * Recall = 0.779 (RBF SVM), F1 = 0.750 (XGBoost), AUC = 0.867 (GBM/XGBoost)
-    * Subject-wise metrics: Accuracy = 0.943 (GBM), Precision = 1.0 (GBM), Recall = 0.882 (GBM), F1 = 0.938 (GBM), AUC = 1.0 (GBM)
+        * Recall Macro = 0.829 (XGBoost), Recall Micro = 0.8307 (XGBoost), Recall Weighted = 0.8307 (XGBoost), Recall class wise = [0.888, 0.716, 0.882] (XGBoost)
+        * F1 Macro = 0.829 (XGBoost), F1 Micro = 0.8307 (XGBoost), F1 Weighted = 0.829 (XGBoost), F1 class wise = [0.827, 0.770, 0.890] (XGBoost)
+        * AUC Macro = 0.945 (GBM), AUC Weighted = 0.945 (GBM)
+    * Subject-wise metrics: 
+        * Accuracy = 
+        * Precision Macro = , Precision Micro = , Precision Weighted = , Precision class wise =
+        * Recall Macro = , Recall Micro = , Recall Weighted = , Recall class wise = 
+        * F1 Macro = , F1 Micro = , F1 Weighted = ), F1 class wise = 
+        * AUC Macro = , AUC Weighted = 
 
 
 * Subject generalization (W)
