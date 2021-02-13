@@ -2,7 +2,10 @@
 
 ### Single stride traditional ML-based benchmark results
 * Task generalization (W -> WT)
-    * Stride-wise metrics: Accuracy = 0.8307 (XGBoost), Precision Macro = 0.835 (XGBoost), Precision Micro = 0.8307 (XGBoost), Precision Weighted = 0.834 (XGBoost), Precision class wise = [0.774, 0.832, 0.899] (XGBoost), Recall = 0.779 (RBF SVM), F1 = 0.750 (XGBoost), AUC = 0.867 (GBM/XGBoost)
+    * Stride-wise metrics: 
+        * Accuracy = 0.8307 (XGBoost)
+        * Precision Macro = 0.835 (XGBoost), Precision Micro = 0.8307 (XGBoost), Precision Weighted = 0.834 (XGBoost), Precision class wise = [0.774, 0.832, 0.899] (XGBoost)
+        * Recall = 0.779 (RBF SVM), F1 = 0.750 (XGBoost), AUC = 0.867 (GBM/XGBoost)
     * Subject-wise metrics: Accuracy = 0.943 (GBM), Precision = 1.0 (GBM), Recall = 0.882 (GBM), F1 = 0.938 (GBM), AUC = 1.0 (GBM)
 
 
