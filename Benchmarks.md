@@ -1,7 +1,7 @@
 # Gait Video Study
 
 ### Single stride traditional ML-based benchmark results
-* Task generalization (W -> WT)
+* **Task generalization (W -> WT)**
     * Stride-wise metrics: 
         * Accuracy = 0.8307 (XGBoost)
         * Precision Macro = 0.835 (XGBoost), Precision Micro = 0.8307 (XGBoost), Precision Weighted = 0.834 (XGBoost), Precision class wise = [0.774, 0.832, 0.899] (XGBoost)
@@ -16,7 +16,7 @@
         * AUC Macro = 1 (Linear SVM/GBM/XGBoost/Logistic Regression), AUC Weighted = 1 (Linear SVM/GBM/XGBoost/Logistic Regression)
 
 
-* Subject generalization (W)
+* **Subject generalization (W)**
     * Stride-wise metrics: 
         * Accuracy = 0.576$`\pm`$0.06 (Logistic Regression)
         * Precision Macro = 0.565$`\pm`$0.06 (Logistic Regression), Precision Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Precision Weighted = 0.60 $`\pm`$ 0.07, Precision class wise = [0.68$`\pm`$0.10, 0.517$`\pm`$0.12, 0.497$`\pm`$0.13] (Logistic Regression)
@@ -31,7 +31,7 @@
         * AUC Macro = 0.844 ± 0.104 (decision_tree), AUC Weighted = 0.843 ± 0.103 (decision_tree) 
 
 
-* Subject generalization (WT)
+* **Subject generalization (WT)**
     * Stride-wise metrics: 
         * Accuracy = 0.546±0.17 (mlp)
         * Precision Macro = 0.557±0.146 (mlp) , Precision Micro = 0.546±0.17 (mlp), Precision Weighted = 0.581±0.121 (mlp), Precision class wise = [0.469 ± 0.36, 0.243 ± 0.21, 0.718 ± 0.23] (kernel_svm)
@@ -46,7 +46,7 @@
         * AUC Macro = 0.917±0.059 (decision_tree), AUC Weighted = 0.91±0.065 (decision_tree)
 
 
-* Subject generalization (comparing W and WT: W)
+* **Subject generalization (comparing W and WT: W)**
     * Stride-wise metrics: 
         * Accuracy = 0.541±0.117 (mlp)
         * Precision Macro = 0.561±0.202 (kernel_svm), Precision Micro = 0.541±0.117 (mlp), Precision Weighted = 0.574±0.216 (kernel_svm), Precision class wise = [0.60 ± 0.201, 0.474 ± 0.091, 0.527 ± 0.213] (logistic_regression)
@@ -60,7 +60,7 @@
         * F1 Macro = 0.64±0.149 (mlp), F1 Micro = 0.643±0.125 (mlp), F1 Weighted = 0.648±0.128 (mlp), F1 class wise = [0.8 ± 0.273, 0.7 ± 0.273, 0.5 ± 0.353] (mlp)
         * AUC Macro = 0.796±0.097 (linear_svm), AUC Weighted = 0.794±0.111 (linear_svm)
 
-* Subject generalization (comparing W and WT: WT)
+* **Subject generalization (comparing W and WT: WT)**
     * Stride-wise metrics: 
         * Accuracy = 0.534±0.137 (xgboost)
         * Precision Macro = 0.528±0.131 (xgboost), Precision Micro = 0.534±0.137 (xgboost), Precision Weighted = 0.568±0.111 (xgboost), Precision class wise = [0.411 ± 0.203, 0.532 ± 0.144, 0.635 ± 0.250] (decision_tree)
@@ -75,7 +75,7 @@
         * AUC Macro = 0.833±0.139 (decision_tree), AUC Weighted = 0.849±0.113 (decision_tree)
 
 
-* Cross (task+subject) generalization (W -> WT)
+* **Cross (task+subject) generalization (W -> WT)**
     * Stride-wise metrics: 
         * Accuracy = 0.482±0.075 (mlp)
         * Precision Macro = 0.493±0.084 (mlp), Precision Micro = 0.482±0.075 (mlp), Precision Weighted = 0.528±0.103 (mlp), Precision class wise = [0.436 ± 0.171, 0.407 ±0.099, 0.635 ± 0.241] (mlp)
