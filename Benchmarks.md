@@ -20,15 +20,15 @@
     * Stride-wise metrics: 
         * Accuracy = 0.576$`\pm`$0.06 (Logistic Regression)
         * Precision Macro = 0.565$`\pm`$0.06 (Logistic Regression), Precision Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Precision Weighted = 0.60 $`\pm`$ 0.07, Precision class wise = [0.68$`\pm`$0.10, 0.517$`\pm`$0.12, 0.497$`\pm`$0.13] (Logistic Regression)
-        * Recall Macro = 0.557$`\pm`$0.06 (Logistic Regression), Recall Micro = , Recall Weighted, Recall class wise
-        * F1 Macro = $`0.451\pm0.19`$ (AdaBoost), F1 Micro, F1 Weighted, F1 class wise 
-        * AUC Macro = $`0.644\pm0.18`$ (AdaBoost), AUC Weighted 
+        * Recall Macro = 0.557$`\pm`$0.06 (Logistic Regression), Recall Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Recall Weighted = 0.576 $`\pm`$ 0.06 (Logistic Regression), Recall class wise = [0.67 $`\pm`$ 0.16, 0.56 $`\pm`$ 0.12, 0.43 $`\pm`$ 0.17] (Logistic Regression)
+        * F1 Macro = 0.542 $`\pm`$ 0.05 (Logistic Regression), F1 Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), F1 Weighted = 0.5709 $`\pm`$ 0.06 (Logistic Regression), F1 class wise = [0.66 $`\pm`$ 0.103, 0.534 $`\pm`$ 0.117, 0.424 $`\pm`$ 0.052] (Logistic Regression)
+        * AUC Macro = 0.731 $`\pm`$ 0.046 (Logistic Regression), AUC Weighted = 0.7309 $`\pm`$ 0.047 (Logistic Regression)
     * Subject-wise metrics: 
-        * Accuracy = $`0.571\pm0.20`$ (MLP)
-        * Precision = $`0.548\pm0.34`$ (RF), Precision Micro, Precision Weighted, Precision class wise
-        * Recall = $`0.548\pm0.33`$ (RF), Recall Micro, Recall Weighted, Recall class wise
-        * F1 = $`0.514\pm0.29`$ (RF), F1 Micro, F1 Weighted, F1 class wise 
-        * AUC = $`0.774\pm0.15`$ (AdaBoost), AUC Weighted 
+        * Accuracy = 0.6904 $`\pm`$ 0.17 (Logistic Regression)
+        * Precision Macro = 0.69 ± 0.172 ( logistic_regression )  (RF), Precision Micro = $`\pm`$, Precision Weighted = $`\pm`$, Precision class wise = $`\pm`$ 
+        * Recall Macro = $`\pm`$ (RF), Recall Micro = $`\pm`$, Recall Weighted = $`\pm`$, Recall class wise = $`\pm`$ 
+        * F1 Macro = $`\pm`$ (RF), F1 Micro = $`\pm`$, F1 Weighted = $`\pm`$, F1 class wise = $`\pm`$
+        * AUC Macro = $`\pm`$, AUC Weighted = $`\pm`$
 
 
 * Subject generalization (WT)
