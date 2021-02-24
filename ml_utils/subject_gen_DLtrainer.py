@@ -8,7 +8,7 @@ reload(gait_data_loader)
 from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
-from ml_utils.DLutils import save_model, load_model, design, custom_StandardScaler, MyCheckpoint, FixRandomSeed
+from ml_utils.DLutils import save_model, load_model, design, custom_StandardScaler, MyCheckpoint
     
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
@@ -75,7 +75,7 @@ class GaitTrainer():
         '''
         net = NeuralNet(
             model,
-            max_epochs = 2,
+            max_epochs = 5,
             lr = .0001,
             criterion=nn.CrossEntropyLoss,
             optimizer=torch.optim.Adam,
@@ -84,7 +84,7 @@ class GaitTrainer():
             train_split = skorch.dataset.CVSplit(5, random_state = 0), 
             batch_size= -1, #Batch size = -1 means full data at once 
             callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
-            (FixRandomSeed()), 
+            (DLutils.FixRandomSeed()), 
             #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = True, name = "train_acc")),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = False, name = "valid_acc")),
@@ -589,26 +589,26 @@ class GaitTrainer():
                 history_fold.to_csv(self.save_path + 'history_fold_' + str(fold+1) + '.csv')
             histories.append(history_fold)
           
-            for idx in range(len(histories)):
-                model_history = histories[idx]
-                epochs = model_history['epoch'].values #start from 1 instead of zero
-                train_loss = model_history['train_loss'].values
-        #         print (train_loss)
-                valid_loss = model_history['valid_loss'].values
-                train_acc = model_history['train_acc'].values
-                valid_acc = model_history['valid_acc'].values
-                #print("epochs", epochs, len(epochs))
-                #print("train_acc", train_acc, len(train_acc))
-                #print("train_loss", train_loss, len(train_loss))
-                #print("valid_loss", valid_loss, len(valid_loss))
-                plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
-                plt.plot(epochs,valid_loss,'r*-');
-                try:
-                    plt.plot(epochs,train_acc,'bo--');
-                except:
-                    plt.plot(epochs,train_acc[:-1],'bo-');
-                #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
-                plt.plot(epochs,valid_acc, 'mo-');
+        for idx in range(len(histories)):
+            model_history = histories[idx]
+            epochs = model_history['epoch'].values #start from 1 instead of zero
+            train_loss = model_history['train_loss'].values
+    #         print (train_loss)
+            valid_loss = model_history['valid_loss'].values
+            train_acc = model_history['train_acc'].values
+            valid_acc = model_history['valid_acc'].values
+            #print("epochs", epochs, len(epochs))
+            #print("train_acc", train_acc, len(train_acc))
+            #print("train_loss", train_loss, len(train_loss))
+            #print("valid_loss", valid_loss, len(valid_loss))
+            plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
+            plt.plot(epochs,valid_loss,'r*-');
+            try:
+                plt.plot(epochs,train_acc,'bo--');
+            except:
+                plt.plot(epochs,train_acc[:-1],'bo-');
+            #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
+            plt.plot(epochs,valid_acc, 'mo-');
         plt.title('Training/Validation loss and accuracy Curves');
         plt.xlabel('Epochs');
         plt.ylabel('Cross entropy loss/Accuracy');

@@ -8,7 +8,7 @@ reload(gait_data_loader)
 from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
-from ml_utils.DLutils import save_model, load_model, FixRandomSeed
+from ml_utils.DLutils import save_model, load_model
 
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
@@ -127,7 +127,7 @@ class GaitTrainer():
             train_split = skorch.dataset.CVSplit(5, random_state = 0), 
             batch_size= -1, #Batch size = -1 means full data at once 
             callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
-            (FixRandomSeed()),
+            (DLutils.FixRandomSeed()),
             #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = True, name = "train_acc")),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = False, name = "valid_acc"))
@@ -223,6 +223,7 @@ class GaitTrainer():
         To plot the training/validation loss and accuracy (stride-wise) curves over epochs 
         '''
         model_history = self.grid_search.best_estimator_.history
+        self.total_epochs = len(model_history)
         epochs = [i for i in range(len(model_history))] #start from 1 instead of zero
 #         print (epochs)
         train_loss = model_history[:,'train_loss']
@@ -425,7 +426,7 @@ class GaitTrainer():
         except:
             best_parameters = self.best_model.get_params()
             
-        self.metrics[self.save_results_prefix] = [acc, p_macro, p_micro, p_weighted, p_class_wise, r_macro, r_micro, r_weighted, r_class_wise, f1_macro, f1_micro, f1_weighted, f1_class_wise, auc_macro, auc_micro, auc_weighted, auc_class_wise, person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_micro, person_auc_weighted, person_auc_class_wise, self.training_time, self.eval_time, self.total_parameters, self.trainable_params, self.nontrainable_params, best_parameters]                                  
+        self.metrics[self.save_results_prefix] = [acc, p_macro, p_micro, p_weighted, p_class_wise, r_macro, r_micro, r_weighted, r_class_wise, f1_macro, f1_micro, f1_weighted, f1_class_wise, auc_macro, auc_micro, auc_weighted, auc_class_wise, person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_micro, person_auc_weighted, person_auc_class_wise, self.training_time, self.eval_time, self.total_parameters, self.trainable_params, self.nontrainable_params, best_parameters, self.total_epochs]                                  
                                     
         self.metrics.index = ['stride_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
                  'stride_precision_class_wise', 'stride_recall_macro', 'stride_recall_micro', \
@@ -439,7 +440,7 @@ class GaitTrainer():
                  'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
                  'person_AUC_macro', 'person_AUC_micro', 'person_AUC_weighted', 'person_AUC_class_wise', 'cross validation time',\
                               'eval time', 'Model Parameters', 'Trainable Parameters', 'Nontrainable Parameters',\
-                              'Best Parameters']  
+                              'Best Parameters', 'Total Epochs']  
         if self.save_results:
             self.metrics.to_csv(self.save_path + 'task_generalize_' + self.framework + '_result_metrics.csv')
 

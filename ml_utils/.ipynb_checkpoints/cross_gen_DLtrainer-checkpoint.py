@@ -657,26 +657,27 @@ class GaitTrainer():
                 history_fold.to_csv(self.save_path + 'history_fold_' + str(fold+1) + '.csv')
             histories.append(history_fold)
           
-            for idx in range(len(histories)):
-                model_history = histories[idx]
-                epochs = model_history['epoch'].values #start from 1 instead of zero
-                train_loss = model_history['train_loss'].values
-        #         print (train_loss)
-                valid_loss = model_history['valid_loss'].values
-                train_acc = model_history['train_acc'].values
-                valid_acc = model_history['valid_acc'].values
-                #print("epochs", epochs, len(epochs))
-                #print("train_acc", train_acc, len(train_acc))
-                #print("train_loss", train_loss, len(train_loss))
-                #print("valid_loss", valid_loss, len(valid_loss))
-                plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
-                plt.plot(epochs,valid_loss,'r*-');
-                try:
-                    plt.plot(epochs,train_acc,'bo--');
-                except:
-                    plt.plot(epochs,train_acc[:-1],'bo-');
-                #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
-                plt.plot(epochs,valid_acc, 'mo-');
+        for idx in range(len(histories)):
+            model_history = histories[idx]
+            epochs = model_history['epoch'].values #start from 1 instead of zero
+            train_loss = model_history['train_loss'].values
+    #         print (train_loss)
+            valid_loss = model_history['valid_loss'].values
+            train_acc = model_history['train_acc'].values
+            valid_acc = model_history['valid_acc'].values
+            #print("epochs", epochs, len(epochs))
+            #print("train_acc", train_acc, len(train_acc))
+            #print("train_loss", train_loss, len(train_loss))
+            #print("valid_loss", valid_loss, len(valid_loss))
+            plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
+            plt.plot(epochs,valid_loss,'r*-');
+            try:
+                plt.plot(epochs,train_acc,'bo--');
+            except:
+                plt.plot(epochs,train_acc[:-1],'bo-');
+            #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
+            plt.plot(epochs,valid_acc, 'mo-');
+        
         plt.title('Training/Validation loss and accuracy Curves');
         plt.xlabel('Epochs');
         plt.ylabel('Cross entropy loss/Accuracy');

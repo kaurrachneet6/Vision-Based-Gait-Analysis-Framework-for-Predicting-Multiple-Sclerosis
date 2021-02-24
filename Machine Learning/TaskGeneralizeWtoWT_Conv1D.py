@@ -20,13 +20,22 @@ For skorch: Refer https://github.com/skorch-dev/skorch/issues/524, https://githu
 from importlib import reload
 from ml_utils.imports import *
 
-from ml_utils import task_gen_DLtrainer, DLutils, CNN1d_model
+from ml_utils import task_gen_DLtrainer, DLutils, CNN1d_model, TCN_model, LSTM_model, GRU_model, RNN_model
 reload(task_gen_DLtrainer)
 reload(DLutils)
 reload(CNN1d_model)
+reload(TCN_model)
+reload(LSTM_model)
+reload(GRU_model)
+reload(RNN_model)
 from ml_utils.DLutils import set_random_seed
 from ml_utils.task_gen_DLtrainer import GaitTrainer
 from ml_utils.CNN1d_model import CNN1D
+from ml_utils.TCN_model import TCN
+from ml_utils.LSTM_model import LSTM
+from ml_utils.GRU_model import GRU
+from ml_utils.RNN_model import RNN
+
 
 #Set up vars for parsing
 hyperparameter_grid = {}
@@ -61,11 +70,59 @@ use_cuda = torch.cuda.is_available() #use_cuda is True if cuda is available
 set_random_seed(0, use_cuda) #Setting a fixed random seed for reproducibility 
 device = torch.device("cuda" if use_cuda else "cpu")
 
-in_chans = 20
-out_chans = 3
-dropout = 0.3
-model_ = CNN1D(in_chans, out_chans, dropout) 
-                       
+if parameter_dict["model"]=="CNN1D":
+    in_chans = 36
+    out_chans = [64, 128, 64]
+    kernel_size = [8, 5, 3]
+    stride = [1, 1, 1]
+    dilation = [1, 1, 1]
+    groups = [1, 1, 1]
+    batch_norm = [True, False, False]
+    dropout = [0.3, 0, 0]
+    maxpool = [False, False, True]
+    maxpool_kernel_size = [2, 2, 2]
+    dense_out_sizes = [10]
+    dense_pool = False
+    dense_pool_kernel_size= 2
+    dense_dropout = [0]
+    global_average_pool = False
+    num_classes = 3     
+    time_steps = 20 #Number of time steps in one data sample
+    position_encoding = True
+    model_ = CNN1D(in_chans, out_chans, kernel_size, stride, dilation, groups, batch_norm, dropout, maxpool, maxpool_kernel_size, dense_out_sizes, dense_pool, dense_pool_kernel_size, dense_dropout, global_average_pool, num_classes, time_steps, position_encoding)
+
+if parameter_dict["model"]=="TCN":
+    in_chans = 36 
+    out_chans = 3
+    num_channels = [20]*2
+    kernel_size = 3
+    dropout = 0.3
+    model_ = TCN(in_chans, out_chans, num_channels, kernel_size, dropout) 
+
+if (parameter_dict["model"]=="LSTM") or (parameter_dict["model"]=="GRU") or (parameter_dict["model"]=="RNN"):
+    in_chans = 36 #36 body coordinate features 
+    hidden_size1 = 30
+    num_layers1 = 3
+    hidden_size2 = 20
+    num_layers2 = 2
+    num_classes = 3
+    dropout = 0.3
+    bidirectional = False
+    pre_out = 50
+    single_layer = False
+    linear_size = 1 #Default is 1 for a single FC layer after the LSTM layers
+    use_layernorm = False
+    hyperparameter_grid['module__batch_size'] = hyperparameter_grid['batch_size']
+    hyperparameter_grid['module__device1'] = [device]
+    
+    if parameter_dict["model"]=="LSTM":
+        model_ = LSTM(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['module__batch_size'][0], hyperparameter_grid['module__device1'][0])   
+    
+    if parameter_dict["model"]=="GRU":
+        model_ = GRU(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['module__batch_size'][0], hyperparameter_grid['module__device1'][0])   
+    if parameter_dict["model"]=="RNN":
+        model_ = RNN(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['module__batch_size'][0], hyperparameter_grid['module__device1'][0])   
+
 trainer = GaitTrainer(parameter_dict, hyperparameter_grid, config_path = args.config_path)
 trainer.task_gen_setup(model_, device_ = device, n_splits_ = 2)
 
