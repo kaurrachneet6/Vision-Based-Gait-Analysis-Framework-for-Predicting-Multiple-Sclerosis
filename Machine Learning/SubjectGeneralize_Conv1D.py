@@ -15,13 +15,15 @@
 from importlib import reload
 from ml_utils.imports import *
 
-from ml_utils import subject_gen_DLtrainer, DLutils, CNN1d_model, gait_data_loader, LSTM_model, GRU_model, RNN_model
+from ml_utils import subject_gen_DLtrainer, DLutils, CNN1d_model, gait_data_loader, LSTM_model, GRU_model, RNN_model, MULTISCALE_RESNET_model, RESNET_model
 reload(subject_gen_DLtrainer)
 reload(DLutils)
 reload(CNN1d_model)
 reload(LSTM_model)
 reload(GRU_model)
 reload(RNN_model)
+reload(MULTISCALE_RESNET_model)
+reload(RESNET_model)
 from ml_utils.DLutils import set_random_seed, accuracy_score_multi_class
 from ml_utils.subject_gen_DLtrainer import GaitTrainer
 from ml_utils.CNN1d_model import CNN1D
@@ -29,6 +31,8 @@ from ml_utils.TCN_model import TCN
 from ml_utils.LSTM_model import LSTM
 from ml_utils.GRU_model import GRU
 from ml_utils.RNN_model import RNN
+from ml_utils.RESNET_model import ResNet
+from ml_utils.MULTISCALE_RESNET_model import MSResNet
 from ml_utils.gait_data_loader import GaitDataset
 
 #Set up vars for parsing
@@ -87,7 +91,31 @@ if parameter_dict["model"]=="CNN1D":
     model_class_ = CNN1D
     model_ = CNN1D(in_chans, out_chans, kernel_size, stride, dilation, groups, batch_norm, dropout, maxpool, maxpool_kernel_size, dense_out_sizes, dense_pool, dense_pool_kernel_size, dense_dropout, global_average_pool, num_classes, time_steps, position_encoding)
 
-
+if parameter_dict["model"] == "Resnet":
+    in_chans = 36
+    initial_conv_layer = True
+    block_name = 'basic_block' #'bottleneck' 
+    layers = [1, 1, 1, 0]
+    kernel_size_conv1 = 1 
+    kernel_size_conv2 = 3 
+    kernel_size_conv3 = 1, 
+    stride_layer64 = [1, 1, 1] 
+    stride_layer128 = [1, 2, 1]
+    stride_layer256 = [1, 2, 1]
+    stride_layer512 = [1, 2, 1] 
+    position_encoding = False
+    num_classes=3
+    model_class_ = ResNet
+    model_ = ResNet(in_chans, initial_conv_layer, block_name, layers, kernel_size_conv1, kernel_size_conv2, kernel_size_conv3, stride_layer64, stride_layer128, stride_layer256, stride_layer512, position_encoding, num_classes)
+      
+if parameter_dict["model"] == "MSResnet":
+    in_chans = 36
+    layers=[1, 1, 1, 1]
+    num_classes = 3
+    model_class_ = MSResNet
+    model_ = MSResNet(in_chans, layers, num_classes) 
+    
+    
 if parameter_dict["model"]=="TCN":
     in_chans = 36
     out_chans = 3
