@@ -34,7 +34,19 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **task_gen_traditionalML.py**: Functions to read extracted features data, tune and evaluate traditional ML models, plot confusion matrices and ROC curves for tuned models in task generalization frameworks.
 * **subject_gen_traditionalML.py**: Functions to read extracted features data, tune and evaluate traditional ML models, plot confusion matrices and ROC curves for tuned models in subject generalization frameworks.
 * **cross_gen_traditionalML.py**: Functions to read extracted features data, tune and evaluate traditional ML models, plot confusion matrices and ROC curves for tuned models in cross (task + subject) generalization frameworks.
-* **task_gen_cnn1d.py**: 
+* **gait_data_loader.py**:
+* **DLutils.py**: 
+* **task_gen_DLtrainer.py**:
+* **subject_gen_DLtrainer.py**:
+* **cross_gen_DLtrainer.py**:
+* **cnn1d_model.py**:
+* **positional_encoding.py**:
+* ****:
+* ****:
+* ****:
+* ****:
+* ****:
+
 
 #### Machine Learning 
 * **SummaryStats.ipynb**: Creating the summary statistics file for the traditional ML algorithms on task/subject generalization frameworks. We use the summary statistics as range, CoV and asymmetry between the right and left limbs as the features to input to the traditional models requiring fixed size 1D input for each training/testing set sample.
@@ -43,14 +55,14 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **Task&SubjectGeneralize_MLtraditional.ipynb**: Traditional ML algorithms on task+subject generalization frameworks, 1. train on some subjects in W and test on separate set of subjects in WT, 2. train on some subjects in VBW and test on separate set of subjects in VBWT, to classify HOA/MS/PD strides and subjects. We use majority voting for subject classification. We use cross validation here but further retain only subjects present for W in training for 1. and only subjects present for WT in testing for 1., and similarly for 2.
 * **TaskGeneralize_Conv1D.ipynb**: 1D CNN algorithm on task generalization framework 1: train on walking (W) and test on walking while talking (WT) and 2: train on virtual beam walking (VBW) and test on virtual beam walking while talking (VBWT) to classify HOA/MS/PD strides and subjects. 
 * **SubjectGeneralize_Conv1D.ipynb**: 1D CNN algorithm on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
+* **CrossGeneralize_Conv1D.ipynb**: 1D CNN algorithm on task-subject cross generalization framework i.e. train on some subjects of trial W and test on rest of the subjects in trial WT, using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
 
 #### Discussion analysis
 * **Ablation_TaskGen_MLTraditional.ipynb**: Ablation Study on Task generalization framework W -> WT with Traditional ML models only. 
     * We will explore the performance of using feet coordinates only (merged from both front and side camera views), feet + ankle coordinates (merged from both front and side camera views), feet + ankle (merged from both front and side camera views) + knee (from the single front camera view) coordinates and all (feet + ankle (merged from both front and side camera views) + knee + hip (from the single front camera view)) coordinates on the traditional ML models. We will add frame count as an extra feature to all these data streams, i.e. we will explore, 1) feet + frame count; 2) feet + ankle + frame count; 3) feet + ankle + knee + frame count; 4) All (Default models).
     * In our main traditional models, total 91 features (including the frame count and 90 CoV, range and asymmetry of the body coordinate features) were used.
 * **Ablation_SubjectGen_MLTraditional.ipynb**: Ablation Study on Subject generalization frameworks 1) W, 2) WT with Traditional ML models only. 
-We will explore the performance of using feet coordinates only (merged from both front and side camera views), feet + ankle coordinates (merged from both front and side camera views), feet + ankle (merged from both front and side camera views) + knee (from the single front camera view) coordinates and all (feet + ankle (merged from both front and side camera views) + knee + hip (from the single front camera view)) coordinates on the traditional ML models.
-
+* **Ablation_CrossGen_MLTraditional.ipynb**: Ablation Study on Task-subject Cross generalization framework with Traditional ML models only.
 *  **FeatureImportance.ipynb**: 
 
 ### Citation:
