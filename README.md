@@ -46,7 +46,11 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 
 #### Discussion analysis
 * **Ablation_TaskGen_MLTraditional.ipynb**: Ablation Study on Task generalization framework W -> WT with Traditional ML models only. 
+    * We will explore the performance of using feet coordinates only (merged from both front and side camera views), feet + ankle coordinates (merged from both front and side camera views), feet + ankle (merged from both front and side camera views) + knee (from the single front camera view) coordinates and all (feet + ankle (merged from both front and side camera views) + knee + hip (from the single front camera view)) coordinates on the traditional ML models. We will add frame count as an extra feature to all these data streams, i.e. we will explore, 1) feet + frame count; 2) feet + ankle + frame count; 3) feet + ankle + knee + frame count; 4) All (Default models).
+    * In our main traditional models, total 91 features (including the frame count and 90 CoV, range and asymmetry of the body coordinate features) were used.
+* **Ablation_SubjectGen_MLTraditional.ipynb**: Ablation Study on Subject generalization frameworks 1) W, 2) WT with Traditional ML models only. 
 We will explore the performance of using feet coordinates only (merged from both front and side camera views), feet + ankle coordinates (merged from both front and side camera views), feet + ankle (merged from both front and side camera views) + knee (from the single front camera view) coordinates and all (feet + ankle (merged from both front and side camera views) + knee + hip (from the single front camera view)) coordinates on the traditional ML models.
+
 *  **FeatureImportance.ipynb**: 
 
 ### Citation:
