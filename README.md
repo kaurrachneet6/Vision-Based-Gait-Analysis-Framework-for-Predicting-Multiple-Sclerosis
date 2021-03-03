@@ -34,18 +34,21 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **task_gen_traditionalML.py**: Functions to read extracted features data, tune and evaluate traditional ML models, plot confusion matrices and ROC curves for tuned models in task generalization frameworks.
 * **subject_gen_traditionalML.py**: Functions to read extracted features data, tune and evaluate traditional ML models, plot confusion matrices and ROC curves for tuned models in subject generalization frameworks.
 * **cross_gen_traditionalML.py**: Functions to read extracted features data, tune and evaluate traditional ML models, plot confusion matrices and ROC curves for tuned models in cross (task + subject) generalization frameworks.
-* **gait_data_loader.py**:
-* **DLutils.py**: 
-* **task_gen_DLtrainer.py**:
-* **subject_gen_DLtrainer.py**:
-* **cross_gen_DLtrainer.py**:
-* **cnn1d_model.py**:
-* **positional_encoding.py**:
-* ****:
-* ****:
-* ****:
-* ****:
-* ****:
+* **gait_data_loader.py**: Defines the Data loader for the deep learning frameworks 
+* **DLutils.py**: Contains definition of general utilities like setting random seed for replicability etc. used across all three generalization frameworks and deep learning models 
+* **task_gen_DLtrainer.py**: Utility functions like train, resume train, evaluate etc. for training the deep learning models on the task generalization framework
+* **subject_gen_DLtrainer.py**: Utility functions for training the deep learning models on the subject generalization frameworks
+* **cross_gen_DLtrainer.py**: Utility functions for training the deep learning models on the cross generalization frameworks
+* **cnn1d_model.py**: CNN1D model for time series classification with and without positional encoding
+* **positional_encoding.py**: Positional encoding https://pytorch.org/tutorials/beginner/transformer_tutorial.html 
+* **RESNET_model.py**: Residual 1D model for time series classification with and without positional encoding
+* **padding.py**: Implementation for "padding = same" in Pytorch https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/layers/padding.py#L28
+* **MULTISCALE_RESNET_model.py**: Multiscale Residual network for time series classification https://github.com/geekfeiw/Multi-Scale-1D-ResNet
+* **TCN_model.py**: Temporal Convolutional Model 
+* **RNN_model.py**: Vanilla Recurrent Neural Network (Uni- and Bi-directional versions)
+* **GRU_model.py**: Gated Recurrent Unit model (Uni- and Bi-directional)
+* **LSTM_model.py**: Long-short term memory model (Uni- and Bi-directional)
+* **CNN_LSTM_model.py**:
 
 
 #### Machine Learning 
@@ -56,6 +59,8 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **TaskGeneralize_Conv1D.ipynb**: 1D CNN algorithm on task generalization framework 1: train on walking (W) and test on walking while talking (WT) and 2: train on virtual beam walking (VBW) and test on virtual beam walking while talking (VBWT) to classify HOA/MS/PD strides and subjects. 
 * **SubjectGeneralize_Conv1D.ipynb**: 1D CNN algorithm on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
 * **CrossGeneralize_Conv1D.ipynb**: 1D CNN algorithm on task-subject cross generalization framework i.e. train on some subjects of trial W and test on rest of the subjects in trial WT, using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
+* **config_files/** contains configuration templates to optimize hyperparamaters for the deep learning models  
+
 
 #### Discussion analysis
 * **Ablation_TaskGen_MLTraditional.ipynb**: Ablation Study on Task generalization framework W -> WT with Traditional ML models only. 
