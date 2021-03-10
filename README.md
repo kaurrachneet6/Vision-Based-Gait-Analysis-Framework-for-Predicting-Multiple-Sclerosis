@@ -56,10 +56,10 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **TaskGeneralize_MLtraditional.ipynb**: Traditional ML algorithms on task generalization framework 1: train on walking (W) and test on walking while talking (WT) and 2: train on virtual beam walking (VBW) and test on virtual beam walking while talking (VBWT) to classify HOA/MS/PD strides and subjects. We use majority voting for subject classification. We retain only subjects common to both train and test sets for this analysis. 
 * **SubjectGeneralize_MLtraditional.ipynb**: Traditional ML algorithms on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects. We use majority voting for subject classification. Further, to compare across the four sub-frameworks of subject generalization, we retain only common subjects across the four frameworks and then rank the frameworks on the basis of best to worst subject generalization performance/capability.
 * **Task&SubjectGeneralize_MLtraditional.ipynb**: Traditional ML algorithms on task+subject generalization frameworks, 1. train on some subjects in W and test on separate set of subjects in WT, 2. train on some subjects in VBW and test on separate set of subjects in VBWT, to classify HOA/MS/PD strides and subjects. We use majority voting for subject classification. We use cross validation here but further retain only subjects present for W in training for 1. and only subjects present for WT in testing for 1., and similarly for 2.
-* **TaskGeneralize_Conv1D.ipynb**: 1D CNN algorithm on task generalization framework 1: train on walking (W) and test on walking while talking (WT) and 2: train on virtual beam walking (VBW) and test on virtual beam walking while talking (VBWT) to classify HOA/MS/PD strides and subjects. 
-* **SubjectGeneralize_Conv1D.ipynb**: 1D CNN algorithm on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
-* **CrossGeneralize_Conv1D.ipynb**: 1D CNN algorithm on task-subject cross generalization framework i.e. train on some subjects of trial W and test on rest of the subjects in trial WT, using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
-* **config_files/** contains configuration templates to optimize hyperparamaters for the deep learning models  
+* **TaskGeneralize.ipynb**: A runner file for all deep learning algorithms on task generalization framework 1: train on walking (W) and test on walking while talking (WT) and 2: train on virtual beam walking (VBW) and test on virtual beam walking while talking (VBWT) to classify HOA/MS/PD strides and subjects. 
+* **SubjectGeneralize.ipynb**: A runner file for all deep learning algorithms on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
+* **CrossGeneralize.ipynb**: A runner file for all deep learning algorithms on task-subject cross generalization framework i.e. train on some subjects of trial W and test on rest of the subjects in trial WT, using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
+* **config_files/** contains configuration templates to optimize hyperparamaters for the deep learning models for main classification results as well as ablation results
 
 
 #### Discussion analysis
@@ -68,7 +68,9 @@ To validate the estimates 3D poses via CoP computed on the treadmill
     * In our main traditional models, total 91 features (including the frame count and 90 CoV, range and asymmetry of the body coordinate features) were used.
 * **Ablation_SubjectGen_MLTraditional.ipynb**: Ablation Study on Subject generalization frameworks 1) W, 2) WT with Traditional ML models only. 
 * **Ablation_CrossGen_MLTraditional.ipynb**: Ablation Study on Task-subject Cross generalization framework with Traditional ML models only.
+* **Ablation Study for the DL models** is done using changes done to the utility functions task/subject/cross_gen_DLtrainer.py respectively.
 *  **FeatureImportance.ipynb**: 
+* **SeverityAnalysis.ipynb**: 
 
 ### Citation:
 If you use this code, please consider citing our work:
