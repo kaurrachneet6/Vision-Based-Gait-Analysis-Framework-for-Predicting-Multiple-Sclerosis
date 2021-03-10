@@ -59,7 +59,7 @@ class Bottleneck(nn.Module):
     For pytorch default, [k1, k2, k3] = [1, 3, 1] and s1 = 1, s2 = 1 for 64 channel bottleneck block and 2 for 128/256/512 channel basic blocks and s3 = 1 for any channel basic block.
     For strong baseline paper, https://arxiv.org/pdf/1611.06455.pdf, they use a bottleneck with [k1, k2, k3] = [8, 5, 3] and [s1, s2, s3] = [1, 1, 1]. They had one 64 channel block (with 3 conv layers as in bottleneck) and two 128 channel blocks, hence layers for the arch. in strong baseline paper is [1, 2, 0, 0], where 0 denotes no blocks with 256 channels and no blocks with 512 channels.
     Note: Because of the way we have set up our Resnet code, our strides list can have only one stride value > 1.
-    The kernel list remains the same with 
+    The kernel list remains the same with blocks of channels 64, 128, 256 or 512; but the stride list differs.
     '''
     expansion = 4
 
@@ -85,42 +85,48 @@ class Bottleneck(nn.Module):
 
     def forward(self, x):
         residual = x
-        print ('1. In bottleneck: residual: ', residual.shape)
+        #To make sure that the time steps do not change on conv layer, we pad them with zeros beforehand 
         out = pad_same(x, self.kernel_size_conv1, self.stride_conv1)
-        print ('1. In bottleneck: After padding: ', out.shape)
         out = self.conv1(out)
         out = self.bn1(out)
         out = self.relu(out)
-        print ('AFTER CONV1. In bottleneck: residual: ', out.shape)
 
         out = pad_same(out, self.kernel_size_conv2, self.stride_conv2)
         out = self.conv2(out)
         out = self.bn2(out)
         out = self.relu(out)
-        print ('AFTER CONV2. In bottleneck: residual: ', out.shape)
 
         out = pad_same(out, self.kernel_size_conv3, self.stride_conv3)
         out = self.conv3(out)
         out = self.bn3(out)
-        print ('AFTER CONV3. In bottleneck: residual: ', out.shape)
 
         if self.downsample is not None:
             residual = self.downsample(x)
-            print ('AFTER DOWNSAMPLE. In bottleneck: residual: ', residual.shape)
-
-        print ('END: In bottleneck: out: ', out.shape)
-        print ('END: In bottleneck: residual: ', residual.shape)
         out += residual
         out = self.relu(out)
-
         return out
 
 
 class ResNet(nn.Module):
     '''
-    
+    This is the main Resnet block which utilizes the Basic block or the Bottleneck depending on whether we need to add the residual after 2 conv layers (basic block) or after 3 layers (bottleneck).
     in_chans: input features = 36 
-    initial_conv_layer = True/False, 
+    initial_conv_layer = True/False, depending on whether we need an initial Conv1D - Batchnorm - ReLU - Maxpool to process our input features to embedding features (before feeding them to the resnet blocks) or not
+    block_name: 'basic_block'/'bottleneck', depending on whether we want 2 or 3 conv layers in each residual block before adding the input to the output 
+    layers: list of 4 elements, where 1st element is no. of residual blocks we add to the network with 64 channels; 2nd element is no. of residual blocks we add for 128 channels and 3rd and 4th element is no. of blocks with 256 and 512 channels resp. So, in strong baseline paper, we have 1 block with 64 channels and 2 with 128; thus the layers = [1, 2, 0, 0]. Note that layers must be a list of 4 elements. 
+    kernel_size_conv1: int denoting kernel size for the first conv. layer of the residual block; In strong baseline paper, it is 8.
+    kernel_size_conv2: kernel size for second conv layer of the residual block.
+    kernel_size_conv3: kernel size for the third conv layer of the residual block. If the basic block is getting used, then since we have only 2 conv layers in a basic block, this is unnecessary and does not get used.
+    Eventually, we use [kernel_size_conv1, kernel_size_conv2] for basic block and [kernel_size_conv1, kernel_size_conv2, kernel_size_conv3] for bottleneck block.
+    stride_layer64: list of 3 elements to denote strides for 3 conv layers for residual block with 64 channels, where 1st and 2nd element are only used for basic block and all 3 elements are used for the bottleneck. 
+    stride_layer128: list of 3 elements to denote strides for 3 conv layers for residual block with 128 channels.
+    Similarly, stride_layer256 and stride_layer512.
+    Note that for basic block, only the first 2 elements from these list will be used.
+    position_encoding: True/False depending on whether we want to addsin/cos based position encoding at the beginning to the features or not
+    num_classes = 3 for HOA/MS/PDS
+    
+    For pytorch default, [k1, k2, k3] = [1, 3, 1]; s1 = 1, s2 = 1 for 64 channel bottleneck block and 2 for 128/256/512 channel basic blocks and s3 = 1 for any channel basic block and layers = [1, 1, 1, 1].
+    For strong baseline paper, https://arxiv.org/pdf/1611.06455.pdf, they use a bottleneck with [k1, k2, k3] = [8, 5, 3]; [s1, s2, s3] = [1, 1, 1] and layers = [1, 2, 0, 0].
     '''
     def __init__(self, in_chans, initial_conv_layer, block_name, layers, kernel_size_conv1, kernel_size_conv2, kernel_size_conv3, stride_layer64, stride_layer128, stride_layer256, stride_layer512, position_encoding = False, num_classes=3):
         super(ResNet, self).__init__()
@@ -200,30 +206,21 @@ class ResNet(nn.Module):
         # At input, boody coords is shaped as batch_size x sequence length (time steps) x 36 features 
         #But for 1D CNN, the input should be shaped as batch_size x features/channels x time steps/sequence length
         x = body_coords.permute(0,2,1)
-        print ('IN MAIN RESNET:', x.shape)
+        #Initial conv layer
         if self.initial_conv_layer:
             x = self.conv1(x)
             x = self.bn1(x)
             x = self.relu(x)
             x = self.maxpool(x)
-            print ('IN MAIN RESNET: AFTER THE INITIAL CONV LAYER', x.shape)
         
-        x = self.layer1(x)
-        print ('IN MAIN RESNET: AFTER THE FIRST RESNET LAYER', x.shape)
-        x = self.layer2(x)
-        print ('IN MAIN RESNET: AFTER THE SECOND RESNET LAYER', x.shape)
-        x = self.layer3(x)
-        print ('IN MAIN RESNET: AFTER THE THIRD RESNET LAYER', x.shape)
-        x = self.layer4(x)
-        print ('IN MAIN RESNET: AFTER THE FOURTH RESNET LAYER', x.shape)
+        x = self.layer1(x) #64 channel residual blocks 
+        x = self.layer2(x) #128 channel 
+        x = self.layer3(x) #256 channel 
+        x = self.layer4(x) #512 channel
 
         x = self.avgpool(x)
-        print ('IN MAIN RESNET: AFTER THE AVGPOOL LAYER', x.shape)
         x = x.view(x.size(0), -1)
         #Adding the extra frame count feature before using the fully connected layers 
         x = torch.cat((x, frame_count.unsqueeze(dim = 1)), dim = 1).float()  
-        print ('IN MAIN RESNET: AFTER THE FLATTEN AND CONCAT', x.shape)
         x = self.fc(x)
-        print ('IN MAIN RESNET: AFTER THE FULLY CONNECTED', x.shape)
-
         return x

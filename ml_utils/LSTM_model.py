@@ -55,7 +55,7 @@ class LSTM(nn.Module):
         self.fc = nn.Linear(hidden_size*self.bi_mult + 1, self.num_classes) #+1 for extra frame count feature 
         
         #Layernorm if needed
-        self.layernorm = nn.LayerNorm(hidden_size*self.bi_mult)
+        self.layernorm = nn.LayerNorm(hidden_size*self.bi_mult + 1)
     
     
     def init_hidden(self, batch_size=None):

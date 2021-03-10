@@ -620,7 +620,7 @@ class GaitTrainer():
         
             
             
-    def subject_gen_setup(self, model_class = None, model = None, device_ = torch.device("cuda"), n_splits_ = 5):        
+    def subject_gen_setup(self, model_class = None, model = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = 'All'):        
         self.device = device_
         if "comparision" in self.framework:
             #Case when we need to retain common subjects in W and WT to compare them
@@ -657,7 +657,7 @@ class GaitTrainer():
         #Get dataloader 
         #Subject generalization W or WT framework 
         #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
-        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario)      
+        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario, datastream = datastream)      
         self.create_folder_for_results()   
         self.torch_model = model
         self.torch_model_class = model_class

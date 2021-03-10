@@ -54,7 +54,7 @@ class GRU(nn.Module):
         self.fc1 = nn.Linear(self.linear_size, self.num_classes)
         self.fc = nn.Linear(hidden_size*self.bi_mult + 1, self.num_classes)
 
-        self.layernorm = nn.LayerNorm(hidden_size*self.bi_mult)
+        self.layernorm = nn.LayerNorm(hidden_size*self.bi_mult + 1)
     
     
     def init_hidden(self, batch_size=None):
@@ -94,21 +94,19 @@ class GRU(nn.Module):
         # Forward propagate GRU
         #out, _ = self.GRU(out, (h0, c0))  # out: tensor of shape (batch_size, seq_length, hidden_size) #uncomment for first linear layer
         out, _ = self.GRU(body_coords, h0)    #uncomment for first GRU layer
-#         print ('1', out.shape)
         if (not self.single_GRU):
             out, _ = self.GRU2(out, h02)
         out = out[:,-1,:]
-#         print ('2', out.shape)
+        
         out = torch.cat((out, frame_count.unsqueeze(dim = 1)), dim = 1).float()
-#         print ('3', out.shape)
+        
         out = self.dropout_layer(out)
         if self.use_layernorm:
             out = self.layernorm(out)
-#         print ('4', out.shape)
+
         if self.linear_size > 1:
             out = F.tanh(self.fc0(out))
             out = self.fc1(out) #Do not use activation at the last linear layer for classification problems
         else:
             out = self.fc(out) #Do not use activation at the last linear layer for classification problems     
-#         print ('5', out.shape)
         return out

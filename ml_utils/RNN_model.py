@@ -55,7 +55,7 @@ class RNN(nn.Module):
         self.fc1 = nn.Linear(self.linear_size, self.num_classes)
         self.fc = nn.Linear(hidden_size*self.bi_mult + 1, self.num_classes)
 
-        self.layernorm = nn.LayerNorm(hidden_size*self.bi_mult)
+        self.layernorm = nn.LayerNorm(hidden_size*self.bi_mult+1)
     
     
     def init_hidden(self, batch_size=None):

@@ -15,15 +15,16 @@
 from importlib import reload
 from ml_utils.imports import *
 
-from ml_utils import subject_gen_DLtrainer, DLutils, CNN1d_model, gait_data_loader, LSTM_model, GRU_model, RNN_model, MULTISCALE_RESNET_model, RESNET_model
+from ml_utils import subject_gen_DLtrainer, DLutils, CNN1d_model, gait_data_loader, TCN_model, LSTM_model, GRU_model, RNN_model, MULTISCALE_RESNET_model, RESNET_model
 reload(subject_gen_DLtrainer)
 reload(DLutils)
 reload(CNN1d_model)
+reload(TCN_model)
 reload(LSTM_model)
 reload(GRU_model)
 reload(RNN_model)
-reload(MULTISCALE_RESNET_model)
 reload(RESNET_model)
+reload(MULTISCALE_RESNET_model)
 from ml_utils.DLutils import set_random_seed, accuracy_score_multi_class
 from ml_utils.subject_gen_DLtrainer import GaitTrainer
 from ml_utils.CNN1d_model import CNN1D
@@ -31,8 +32,8 @@ from ml_utils.TCN_model import TCN
 from ml_utils.LSTM_model import LSTM
 from ml_utils.GRU_model import GRU
 from ml_utils.RNN_model import RNN
-from ml_utils.RESNET_model import ResNet
 from ml_utils.MULTISCALE_RESNET_model import MSResNet
+from ml_utils.RESNET_model import ResNet
 from ml_utils.gait_data_loader import GaitDataset
 
 #Set up vars for parsing
@@ -102,19 +103,18 @@ if parameter_dict["model"] == "Resnet":
     stride_layer64 = [1, 1, 1] 
     stride_layer128 = [1, 2, 1]
     stride_layer256 = [1, 2, 1]
-    stride_layer512 = [1, 2, 1] 
+    stride_layer512 = [1, 2, 1]  
     position_encoding = False
     num_classes=3
     model_class_ = ResNet
     model_ = ResNet(in_chans, initial_conv_layer, block_name, layers, kernel_size_conv1, kernel_size_conv2, kernel_size_conv3, stride_layer64, stride_layer128, stride_layer256, stride_layer512, position_encoding, num_classes)
-      
+    
 if parameter_dict["model"] == "MSResnet":
     in_chans = 36
     layers=[1, 1, 1, 1]
     num_classes = 3
     model_class_ = MSResNet
     model_ = MSResNet(in_chans, layers, num_classes) 
-    
     
 if parameter_dict["model"]=="TCN":
     in_chans = 36
@@ -140,6 +140,7 @@ if (parameter_dict["model"]=="LSTM") or (parameter_dict["model"]=="GRU") or (par
     use_layernorm = False
     hyperparameter_grid['net__module__batch_size'] = hyperparameter_grid['net__batch_size']
     hyperparameter_grid['net__module__device1'] = [device]
+    
     if parameter_dict["model"]=="LSTM":
         model_class_ = LSTM
         model_ = LSTM(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['net__module__batch_size'][0], hyperparameter_grid['net__module__device1'][0])   
@@ -151,6 +152,6 @@ if (parameter_dict["model"]=="LSTM") or (parameter_dict["model"]=="GRU") or (par
     if parameter_dict["model"]=="RNN":
         model_class_ = RNN
         model_ = RNN(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['net__module__batch_size'][0], hyperparameter_grid['net__module__device1'][0])   
-    
+
 trainer = GaitTrainer(parameter_dict, hyperparameter_grid, config_path = args.config_path)
-trainer.subject_gen_setup(model_class_, model_, device_ = device, n_splits_ = 2)
+trainer.subject_gen_setup(model_class_, model_, device_ = device, n_splits_ = 5, datastream = parameter_dict["datastream"])

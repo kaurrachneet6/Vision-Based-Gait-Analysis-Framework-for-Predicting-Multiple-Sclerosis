@@ -690,7 +690,7 @@ class GaitTrainer():
         
         
     #Main setup
-    def cross_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5):
+    def cross_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = 'All'):
         self.extract_train_test_common_PIDs()
         design()
         
@@ -746,7 +746,7 @@ class GaitTrainer():
         
         #Get dataloader 
         #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
-        self.data = GaitDataset(self.data_path, self.labels_file, self.train_test_concatenated['PID'].unique(), framework = [self.train_framework, self.test_framework])
+        self.data = GaitDataset(self.data_path, self.labels_file, self.train_test_concatenated['PID'].unique(), framework = [self.train_framework, self.test_framework], datastream = datastream)
         #Computing the X (91 features), Y (PID, label) for the models 
         self.X_sl = SliceDataset(self.data, idx = 0)
         self.Y_sl = SliceDataset(self.data, idx = 1)

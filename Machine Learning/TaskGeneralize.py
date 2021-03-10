@@ -40,7 +40,6 @@ from ml_utils.RNN_model import RNN
 from ml_utils.MULTISCALE_RESNET_model import MSResNet
 from ml_utils.RESNET_model import ResNet
 
-
 #Set up vars for parsing
 hyperparameter_grid = {}
 parameter_dict = {}
@@ -116,9 +115,9 @@ if parameter_dict["model"] == "MSResnet":
     layers=[1, 1, 1, 1]
     num_classes = 3
     model_ = MSResNet(in_chans, layers, num_classes) 
-    
+
 if parameter_dict["model"]=="TCN":
-    in_chans = 36 
+    in_chans = 36
     out_chans = 3
     num_channels = [20]*2
     kernel_size = 3
@@ -148,10 +147,10 @@ if (parameter_dict["model"]=="LSTM") or (parameter_dict["model"]=="GRU") or (par
         model_ = GRU(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['module__batch_size'][0], hyperparameter_grid['module__device1'][0])   
     
     if parameter_dict["model"]=="RNN":
-        model_ = RNN(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['module__batch_size'][0], hyperparameter_grid['module__device1'][0])   
+        model_ = RNN(in_chans, hidden_size1, num_layers1, hidden_size2, num_layers2, num_classes, dropout, bidirectional, pre_out, single_layer, linear_size, use_layernorm, hyperparameter_grid['module__batch_size'][0], hyperparameter_grid['module__device1'][0]) 
 
 trainer = GaitTrainer(parameter_dict, hyperparameter_grid, config_path = args.config_path)
-trainer.task_gen_setup(model_, device_ = device, n_splits_ = 2)
+trainer.task_gen_setup(model_, device_ = device, n_splits_ = 5, datastream = parameter_dict["datastream"])
 
 #To do/check
 #argparse pipeline - Done

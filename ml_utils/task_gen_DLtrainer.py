@@ -63,7 +63,7 @@ class GaitTrainer():
 
     
     
-    def get_data_loaders(self):
+    def get_data_loaders(self, datastream):
         '''
         To define the training and testing data loader to load X, y for training and testing sets in batches 
         Arguments:
@@ -80,7 +80,7 @@ class GaitTrainer():
         #Task generalization W-> WT framework 
         #Loading the full training data in one go to compute the training data's mean and standard deviation for normalization 
         #We set the batch_size = len(training_data) for the same 
-        training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework)   
+        training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, datastream = datastream)   
         training_data_loader = DataLoader(training_data, batch_size = len(training_data), shuffle = self.parameter_dict['shuffle'], \
                                           num_workers = self.parameter_dict['num_workers'])
         #Since we loaded all the training data in a single batch, we can read all data and target in one go
@@ -93,9 +93,9 @@ class GaitTrainer():
 
         #With training data mean/min and standard deviation/max-min computed, 
         #we can load the z-score/min-max normalized training and testing data in batches 
-        self.training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, \
+        self.training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, datastream = datastream, \
                                     train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_)   
-        self.testing_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_test, framework = self.test_framework, \
+        self.testing_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_test, framework = self.test_framework, datastream = datastream, \
                                   train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_) 
 
         #To make sure the z-score/min-max normalization worked correctly 
@@ -521,7 +521,7 @@ class GaitTrainer():
 
         
     
-    def task_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5):
+    def task_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = 'All'):
         #Task generalization W-> WT framework 
         #Trial W for training 
         self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
@@ -542,7 +542,7 @@ class GaitTrainer():
         print ('HOA, MS and PD strides in testing set:\n', trial_test_reduced['cohort'].value_counts())
         print ('Imbalance ratio (controls:MS:PD)= 1:X:Y\n', trial_test_reduced['cohort'].value_counts()/trial_test_reduced['cohort'].value_counts()['HOA'])
         
-        self.get_data_loaders()
+        self.get_data_loaders(datastream)
         self.create_folder_for_results()   
     
         if self.parameter_dict['behavior'] == 'train':
