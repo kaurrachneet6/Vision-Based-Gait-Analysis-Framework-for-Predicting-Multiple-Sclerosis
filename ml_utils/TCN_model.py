@@ -173,5 +173,3 @@ class TCN(nn.Module):
         #Note that we do not use activation at the last layer for classification problems 
         out = self.linear(y) #Softmax happens at the cross entropy loss 
         return out
-    
-

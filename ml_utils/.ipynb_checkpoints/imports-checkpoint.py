@@ -20,8 +20,6 @@ import argparse
 import sys
 from datetime import datetime
 import pickle
-import math
-import itertools
 
 
 import xgboost 
@@ -57,10 +55,8 @@ from sklearn.preprocessing import label_binarize
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils import weight_norm, remove_weight_norm
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-from torch.autograd import Variable
 from torchvision import transforms
 from skorch import NeuralNet, NeuralNetClassifier #For hyperparameter tuning in pytorch models 
 from skorch import helper
@@ -76,7 +72,6 @@ from skorch.helper import SliceDataset
 from skorch.utils import to_numpy
 from skorch.helper import predefined_split
 from numpy import argmax
-from torch.nn.parameter import Parameter
 
 #This needs to contain all optimizers that will be used so they can be properly imported
 optims = {

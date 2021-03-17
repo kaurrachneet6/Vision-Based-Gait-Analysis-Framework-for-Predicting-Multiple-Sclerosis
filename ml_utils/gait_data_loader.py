@@ -59,6 +59,7 @@ class GaitDataset(Dataset_skorch):
         self.feet_ankle_features = self.feet_features + ankle_features
         self.feet_ankle_knee_features = self.feet_features + ankle_features + knee_features
           
+
     def __getitem__(self, index):
         #Generates one sample of data
         #Select key to sample
@@ -76,15 +77,15 @@ class GaitDataset(Dataset_skorch):
         if self.train_frame_count_mean is not None: #Used to load z-score normalized data in batches 
             #Across training data strides, frame count normalization
             frame_count = (frame_count - self.train_frame_count_mean)/self.train_frame_count_std 
+        
         if self.datastream == 'feet':
             X = X[self.feet_features]
         if self.datastream == 'feet_ankle':
             X = X[self.feet_ankle_features]
         if self.datastream == 'feet_ankle_knee':
             X = X[self.feet_ankle_knee_features]
-            
-#         print ('Features used:', X.columns)
-        X = torch.Tensor(X.values) #converting the dataframe to tensor  
+
+        X = torch.Tensor(X.values) #converting the dataframe to tensor 
         data = {'body_coords': X, 'frame_count': frame_count}
         label = torch.Tensor(y)[1:].long() #shape = 2 for PID and label 
 #         print (label.shape)

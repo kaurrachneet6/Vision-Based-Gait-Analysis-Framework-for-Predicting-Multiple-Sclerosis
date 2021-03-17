@@ -4,7 +4,7 @@ reload(ml_utils.imports)
 from ml_utils.imports import *
 from ml_utils.split import StratifiedGroupKFold
 
-def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_name, results_path, save_results = True, datastream_name = 'All'):
+def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_name, results_path, save_results = True):
     '''
     Arguments: trained model, test set, true and predicted labels for test set, framework and model name 
     Returns: predicted probabilities and labels for each class, stride and subject based evaluation metrics 
@@ -116,9 +116,9 @@ def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_nam
     #stride and subject wise confusion matrix for each model
     if save_results:
         test_strides_true_predicted_labels.to_csv(results_path+ framework + '\\stride_wise_predictions_' + \
-                                      str(model_name) + '_' + datastream_name + '_' + framework + '.csv')
+                                      str(model_name) + '_' + framework + '.csv')
         test_subjects_true_predicted_labels.to_csv(results_path+ framework + '\\person_wise_predictions_' + \
-                                      str(model_name) + '_' + datastream_name + '_' + framework + '.csv')
+                                      str(model_name) + '_' + framework + '.csv')
     
     #Plotting and saving the sequence and subject wise confusion matrices 
     #Sequence wise confusion matrix
@@ -127,7 +127,7 @@ def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_nam
                                rownames=['Actual'], colnames=['Predicted'], margins = True)
     sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu", fmt = 'd')
     if save_results:
-        plt.savefig(results_path + framework + '\\CFmatrix_subject_generalize_' + framework + '_'+ str(model_name) + '_'+ datastream_name + '_stride_wise.png', dpi = 350)
+        plt.savefig(results_path + framework + '\\CFmatrix_subject_generalize_' + framework + '_'+ str(model_name) + '_stride_wise.png', dpi = 350)
     plt.show()
 
     #Plotting and saving the subject wise confusion matrix 
@@ -136,7 +136,7 @@ def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_nam
                                rownames=['Actual'], colnames=['Predicted'], margins = True)
     sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu")
     if save_results:
-        plt.savefig(results_path + framework + '\\CFmatrix_subject_generalize_' + framework + '_'+ str(model_name) + '_'+ datastream_name + '.png', dpi = 350)
+        plt.savefig(results_path + framework + '\\CFmatrix_subject_generalize_' + framework + '_'+ str(model_name)+ '.png', dpi = 350)
     plt.show()
     
     return test_subjects_true_predicted_labels, [stride_metrics_mean, stride_metrics_std, person_means, person_stds]
@@ -157,7 +157,7 @@ def acc(y_true,y_pred):
 
 
 #We do not use LDA/QDA since our features are not normally distributed 
-def models(X, Y, model_name = 'random_forest', framework = 'W', results_path = '..\\MLresults\\', save_results = True, datastream_name = 'All'):
+def models(X, Y, model_name = 'random_forest', framework = 'W', results_path = '..\\MLresults\\', save_results = True):
     '''
     Arguments:
     X, Y, PID groups so that strides of each person are either in training or in testing set
@@ -289,13 +289,13 @@ def models(X, Y, model_name = 'random_forest', framework = 'W', results_path = '
         grid_search = GridSearchCV(mlp_grid, param_grid=grid, scoring=scores\
                            , n_jobs = 1, cv=gkf.split(X, Y_, groups=groups_), refit=False)
     grid_search.fit(X, Y_, groups=groups_) #Fitting on the training set to find the optimal hyperparameters 
-    test_subjects_true_predicted_labels, stride_person_metrics = evaluate(grid_search, Y, yoriginal, ypredicted, framework, model_name, results_path, save_results, datastream_name)
+    test_subjects_true_predicted_labels, stride_person_metrics = evaluate(grid_search, Y, yoriginal, ypredicted, framework, model_name, results_path, save_results)
     return test_subjects_true_predicted_labels, stride_person_metrics
 
 
 
 #ROC curves 
-def plot_ROC(ml_model, test_set_true_predicted_labels, framework, results_path, save_results = True, datastream_name = 'All'):
+def plot_ROC(ml_model, test_set_true_predicted_labels, framework, results_path, save_results = True):
     '''
     Function to plot the ROC curve and confusion matrix for model given in ml_model name 
     Input: ml_models (name of models to plot the ROC for),  test_Y (true test set labels with PID), 
@@ -357,12 +357,12 @@ def plot_ROC(ml_model, test_set_true_predicted_labels, framework, results_path, 
     axes.set_xlabel('False Positive Rate')
     plt.tight_layout()
     if save_results:
-        plt.savefig(results_path + framework+'\\ROC_subject_generalize_' + framework + '_'+ ml_model + '_'+ datastream_name + '.png', dpi = 350)
+        plt.savefig(results_path + framework+'\\ROC_subject_generalize_' + framework + '_'+ ml_model+ '.png', dpi = 350)
     plt.show()
     
     
     
-def run_ml_models(ml_models, X, Y, framework, results_path, save_results = True, datastream_name = 'All'):
+def run_ml_models(ml_models, X, Y, framework, results_path, save_results = True):
     '''
     Function to run the ML models for the required framework
     Arguments: names of ml_models, X, Y, framework 
@@ -375,9 +375,9 @@ def run_ml_models(ml_models, X, Y, framework, results_path, save_results = True,
         global yoriginal, ypredicted
         yoriginal = []
         ypredicted = []
-        test_subjects_true_predicted_labels, stride_person_metrics = models(X, Y, ml_model, framework, results_path, save_results, datastream_name)
+        test_subjects_true_predicted_labels, stride_person_metrics = models(X, Y, ml_model, framework, results_path, save_results)
         metrics[ml_model] = sum(stride_person_metrics, [])
-        plot_ROC(ml_model, test_subjects_true_predicted_labels, framework, results_path, save_results, datastream_name)
+        plot_ROC(ml_model, test_subjects_true_predicted_labels, framework, results_path, save_results)
         print ('********************************')
     stride_scoring_metrics = ['stride_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
                  'stride_precision_class_wise', 'stride_recall_macro', 'stride_recall_micro', \
@@ -396,7 +396,7 @@ def run_ml_models(ml_models, X, Y, framework, results_path, save_results = True,
     
     #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
     if save_results:
-        metrics.to_csv(results_path+framework+'\\subject_generalize_'+ '_' + str(datastream_name) + '_' + framework+'_result_metrics.csv')
+        metrics.to_csv(results_path+framework+'\\subject_generalize_'+framework+'_result_metrics.csv')
     return metrics
 
 

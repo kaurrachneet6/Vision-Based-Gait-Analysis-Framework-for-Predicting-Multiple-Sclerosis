@@ -20,7 +20,7 @@ class GaitTrainer():
         self.train_framework = self.parameter_dict['train_framework']
         self.test_framework = self.parameter_dict['test_framework']
         self.hyperparameter_grid = hyperparameter_grid
-        self.save_results_path = self.parameter_dict['results_path'] + self.framework + '\\' + self.parameter_dict['model_path']
+        self.save_results_path = self.parameter_dict['results_path'] + self.framework + '/' + self.parameter_dict['model_path']
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path
@@ -93,10 +93,10 @@ class GaitTrainer():
 
         #With training data mean/min and standard deviation/max-min computed, 
         #we can load the z-score/min-max normalized training and testing data in batches 
-        self.training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, datastream = datastream, \
-                                    train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_)   
-        self.testing_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_test, framework = self.test_framework, datastream = datastream, \
-                                  train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_) 
+        self.training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, \
+                                    datastream = datastream, train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_)   
+        self.testing_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_test, framework = self.test_framework, \
+                                  datastream = datastream, train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_) 
 
         #To make sure the z-score/min-max normalization worked correctly 
         training_data_loader_check = DataLoader(self.training_data, batch_size = len(self.training_data), shuffle = self.parameter_dict['shuffle'], \
@@ -118,14 +118,14 @@ class GaitTrainer():
         '''
         net = NeuralNet(
             model,
-            max_epochs = 2,
+            max_epochs = 2000,
             lr = .0001,
             criterion=nn.CrossEntropyLoss,
             optimizer=torch.optim.Adam,
             device = device_,
             iterator_train__shuffle=True,
             train_split = skorch.dataset.CVSplit(5, random_state = 0), 
-            batch_size= -1, #Batch size = -1 means full data at once 
+            batch_size= 128, #Batch size = -1 means full data at once 
             callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
             (DLutils.FixRandomSeed()),
             #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
@@ -210,7 +210,7 @@ class GaitTrainer():
     def create_folder_for_results(self):
           #Create folder for saving results
         time_now = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_%f")
-        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"\\"
+        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"/"
         print("save path: ", self.save_path)
         os.mkdir(self.save_path)
         #Copy config file to results folder
@@ -235,14 +235,17 @@ class GaitTrainer():
         #print("train_acc", train_acc, len(train_acc))
         #print("train_loss", train_loss, len(train_loss))x
         #print("valid_loss", valid_loss, len(valid_loss))
-        plt.plot(epochs,train_loss,'g*-'); #Dont print the last one for 3 built in
-        plt.plot(epochs,valid_loss,'r*-');
+        plt.plot(epochs,train_loss,'g-'); #Dont print the last one for 3 built in
+        plt.plot(epochs,valid_loss,'r-');
         try:
-            plt.plot(epochs,train_acc,'bo-');
+            plt.plot(epochs,train_acc,'b-');
         except:
-            plt.plot(epochs,train_acc[:-1],'bo-');
+            plt.plot(epochs[:-1],train_acc,'b-');
         #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
-        plt.plot(epochs,valid_acc, 'mo-');
+        try:
+            plt.plot(epochs,valid_acc, 'm-');
+        except:
+            plt.plot(epochs[:-1], valid_acc, 'm-');
         plt.title('Training/Validation loss and accuracy Curves');
         plt.xlabel('Epochs');
         plt.ylabel('Cross entropy loss/Accuracy');

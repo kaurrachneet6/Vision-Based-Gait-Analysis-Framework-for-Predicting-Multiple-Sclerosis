@@ -20,7 +20,7 @@ class GaitTrainer():
         self.train_framework = self.parameter_dict['train_framework']
         self.test_framework = self.parameter_dict['test_framework']
         self.hyperparameter_grid = hyperparameter_grid
-        self.save_results_path = self.parameter_dict['results_path']  + self.framework + '\\'+ self.parameter_dict['model_path']
+        self.save_results_path = self.parameter_dict['results_path']  + self.framework + '/'+ self.parameter_dict['model_path']
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path
@@ -141,7 +141,7 @@ class GaitTrainer():
     def create_folder_for_results(self):
         #Create folder for saving results
         time_now = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_%f")
-        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"\\"
+        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"/"
         print("save path: ", self.save_path)
         os.mkdir(self.save_path)
         #Copy config file to results folder
@@ -158,7 +158,7 @@ class GaitTrainer():
         '''
         net = NeuralNet(
             model,
-            max_epochs = 2,
+            max_epochs = 2000,
             lr = .0001,
             criterion=nn.CrossEntropyLoss,
             optimizer=torch.optim.Adam,
@@ -490,7 +490,7 @@ class GaitTrainer():
                                    rownames=['Actual'], colnames=['Predicted'], margins = True)
         sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu", fmt = 'd')
         if self.save_results:
-            plt.savefig(self.save_path  + '\\CFmatrix_cross_generalize_' + self.framework + '_stride_wise.png', dpi = 350)
+            plt.savefig(self.save_path  + 'CFmatrix_cross_generalize_' + self.framework + '_stride_wise.png', dpi = 350)
         plt.show()
 
         #Plotting and saving the subject wise confusion matrix 
@@ -503,7 +503,7 @@ class GaitTrainer():
         plt.show()    
         
         
-        stride_person_metrics = [stride_metrics_mean, stride_metrics_std, person_means, person_stds, [self.training_time], [self.best_params], [self.total_parameters], [self.trainable_params], [self.nontrainable_params]]
+        stride_person_metrics = [stride_metrics_mean, stride_metrics_std, person_means, person_stds, [self.training_time], [self.best_params], [self.total_parameters], [self.trainable_params], [self.nontrainable_params], [str(self.total_epochs)]]
         
         self.metrics = pd.DataFrame(columns = [self.save_results_prefix]) #Dataframe to store accuracies for each ML model for raw data 
         self.metrics[self.save_results_prefix] = sum(stride_person_metrics, [])
@@ -517,7 +517,9 @@ class GaitTrainer():
                  'person_recall_weighted', 'person_recall_class_wise', \
                  'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
                  'person_AUC_macro', 'person_AUC_weighted']   
-        self.metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params']
+        print ('Metrics', self.metrics)
+        print ('Metrics Index', [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs'])
+        self.metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs']
     
         #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
         if self.save_results:
@@ -643,7 +645,8 @@ class GaitTrainer():
         self.best_params = self.grid_search.cv_results_['params'][best_index]
         pipe_optimized = self.pipe.set_params(**self.best_params)
         #List of history dataframes over n_splits folds 
-        histories = []     
+        histories = []  
+        self.total_epochs = []   
         
         for fold, (train_ix, val_ix) in enumerate(zip(self.train_indices, self.test_indices)):
             # select rows for train and test
@@ -660,6 +663,7 @@ class GaitTrainer():
         for idx in range(len(histories)):
             model_history = histories[idx]
             epochs = model_history['epoch'].values #start from 1 instead of zero
+            self.total_epochs.append(len(epochs))
             train_loss = model_history['train_loss'].values
     #         print (train_loss)
             valid_loss = model_history['valid_loss'].values
@@ -669,15 +673,17 @@ class GaitTrainer():
             #print("train_acc", train_acc, len(train_acc))
             #print("train_loss", train_loss, len(train_loss))
             #print("valid_loss", valid_loss, len(valid_loss))
-            plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
-            plt.plot(epochs,valid_loss,'r*-');
+            plt.plot(epochs,train_loss,'g--'); #Dont print the last one for 3 built in
+            plt.plot(epochs,valid_loss,'r-');
             try:
-                plt.plot(epochs,train_acc,'bo--');
+                plt.plot(epochs,train_acc,'b--');
             except:
-                plt.plot(epochs,train_acc[:-1],'bo-');
+                plt.plot(epochs,train_acc[:-1],'b-');
             #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
-            plt.plot(epochs,valid_acc, 'mo-');
-        
+            try:
+                plt.plot(epochs,valid_acc, 'm-');
+            except:
+                plt.plot(epochs[:-1], valid_acc, 'm-');
         plt.title('Training/Validation loss and accuracy Curves');
         plt.xlabel('Epochs');
         plt.ylabel('Cross entropy loss/Accuracy');
@@ -690,7 +696,7 @@ class GaitTrainer():
         
         
     #Main setup
-    def cross_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = 'All'):
+    def cross_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = "All"):
         self.extract_train_test_common_PIDs()
         design()
         

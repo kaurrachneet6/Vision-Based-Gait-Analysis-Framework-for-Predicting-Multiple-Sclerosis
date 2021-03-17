@@ -67,7 +67,7 @@ def normalize(dataframe, n_type):
 
 
 
-def models(trainX, trainY, testX, testY, model_name = 'random_forest', framework = 'WtoWT', results_path = '..\\MLresults\\', save_results = True, datastream_name = 'All'):
+def models(trainX, trainY, testX, testY, model_name = 'random_forest', framework = 'WtoWT', results_path = '..\\MLresults\\', save_results = True):
     '''
     Function to define and tune ML models 
     Arguments: 
@@ -214,12 +214,12 @@ def models(trainX, trainY, testX, testY, model_name = 'random_forest', framework
 #     print('Mean cv accuracy on train set:', grid_search.cv_results_['mean_train_score'][grid_search.best_index_])
 #     print('Standard deviation on train set:', grid_search.cv_results_['std_train_score'][grid_search.best_index_])
 #     print('Test set performance:\n')
-    person_wise_prob_for_roc, stride_person_metrics = evaluate(grid_search, testX, testY, framework, model_name, results_path, save_results, datastream_name)
+    person_wise_prob_for_roc, stride_person_metrics = evaluate(grid_search, testX, testY, framework, model_name, results_path, save_results)
     return person_wise_prob_for_roc, stride_person_metrics
 
 
 
-def evaluate(model, test_features, trueY, framework, model_name, results_path, save_results = True, datastream_name = 'All'):
+def evaluate(model, test_features, trueY, framework, model_name, results_path, save_results = True):
     '''
     Function to evaluate ML models and plot it's confusion matrix
     Arguments: 
@@ -287,7 +287,7 @@ def evaluate(model, test_features, trueY, framework, model_name, results_path, s
     temp['pred'] = predictions #Predicted label for the stride 
     #Saving the stride wise true and predicted labels for calculating the stride wise confusion matrix for each model
     if save_results:
-        temp.to_csv(results_path+ framework + '\\stride_wise_predictions_' + str(model_name) + '_'+ str(datastream_name) + '_' + framework + '.csv')
+        temp.to_csv(results_path+ framework + '\\stride_wise_predictions_' + str(model_name) + '_' + framework + '.csv')
     
     x = temp.groupby('PID')['pred'].value_counts().unstack()
     #Input for subject wise AUC is probabilities at columns [0, 1, 2]
@@ -301,7 +301,7 @@ def evaluate(model, test_features, trueY, framework, model_name, results_path, s
     #Saving the person wise true and predicted labels for calculating the subject wise confusion matrix for each model
     if save_results:
         proportion_strides_correct.to_csv(results_path+ framework + '\\person_wise_predictions_' + \
-                                      str(model_name) + '_' + str(datastream_name) + '_' + framework + '.csv')
+                                      str(model_name) + '_' + framework + '.csv')
     try:
         print (model.best_estimator_)
     except:
@@ -363,7 +363,7 @@ def evaluate(model, test_features, trueY, framework, model_name, results_path, s
                                rownames=['Actual'], colnames=['Predicted'], margins = True)
     sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu", fmt = 'd')
     if save_results:
-        plt.savefig(results_path + framework +'\\CFmatrix_task_generalize_' + framework + '_'+ str(model_name) + '_'+ str(datastream_name) + '_stride_wise.png', dpi = 350)
+        plt.savefig(results_path + framework +'\\CFmatrix_task_generalize_' + framework + '_'+ str(model_name) + '_stride_wise.png', dpi = 350)
     plt.show()
 
     
@@ -373,14 +373,14 @@ def evaluate(model, test_features, trueY, framework, model_name, results_path, s
                                    rownames=['Actual'], colnames=['Predicted'], margins = True)
     sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu")
     if save_results:
-        plt.savefig(results_path + framework+'\\CFmatrix_task_generalize_' + framework + '_'+ str(model_name) + '_'+ str(datastream_name) + '.png', dpi = 350)
+        plt.savefig(results_path + framework+'\\CFmatrix_task_generalize_' + framework + '_'+ str(model_name) + '.png', dpi = 350)
     plt.show()
     return proportion_strides_correct[[0, 1, 2]], [acc, p_macro, p_micro, p_weighted, p_class_wise, r_macro, r_micro, r_weighted, r_class_wise, f1_macro, f1_micro, f1_weighted, f1_class_wise, auc_macro, auc_micro, auc_weighted, auc_class_wise, person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_micro, person_auc_weighted, person_auc_class_wise] 
 
 
 
 #Test set ROC curves for cohort prediction 
-def plot_ROC(ml_models, testY, predicted_probs_person, framework, results_path, save_results = True, datastream_name = 'All'):
+def plot_ROC(ml_models, testY, predicted_probs_person, framework, results_path, save_results = True):
     '''
     Function to plot the ROC curve for models given in ml_models list 
     Arguments: 
@@ -451,5 +451,5 @@ def plot_ROC(ml_models, testY, predicted_probs_person, framework, results_path, 
         axes.set_xlabel('False Positive Rate')
         plt.tight_layout()
         if save_results:
-            plt.savefig(results_path + framework+'\\ROC_task_generalize_' + framework + '_'+ ml_model + '_'+ str(datastream_name) + '.png', dpi = 350)
+            plt.savefig(results_path + framework+'\\ROC_task_generalize_' + framework + '_'+ ml_model+ '.png', dpi = 350)
         plt.show()
