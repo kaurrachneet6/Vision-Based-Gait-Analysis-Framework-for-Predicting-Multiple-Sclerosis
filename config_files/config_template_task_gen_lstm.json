@@ -14,6 +14,7 @@
 "behavior": "train",
 "re_train_epochs": 5,
 "saved_model_path": "cnn1d_try_2021_01_26-19_11_02_951362\\",
+"datastream": "All",
 "param_batch_size": [100],
 "param_lr": [0.0001],
 "param_optimizer": ["torch.optim.Adam"],

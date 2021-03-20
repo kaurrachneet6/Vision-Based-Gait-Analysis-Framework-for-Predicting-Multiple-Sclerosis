@@ -78,6 +78,8 @@ class GaitDataset(Dataset_skorch):
             #Across training data strides, frame count normalization
             frame_count = (frame_count - self.train_frame_count_mean)/self.train_frame_count_std 
         
+#         display(X.head())
+#         print (X.columns)
         if self.datastream == 'feet':
             X = X[self.feet_features]
         if self.datastream == 'feet_ankle':
@@ -92,3 +94,14 @@ class GaitDataset(Dataset_skorch):
         pid = torch.Tensor(y)[:1]
 #         print (X.shape, y.shape)
         return data, label.squeeze(), pid   
+
+
+    def __define_column_indices_FI__(self, permute_feature):
+        '''
+        Used for Permutation feature importance to select columns to permute for each feature group
+        permute_feature: feature to return column indices for, example: for permute_feature = left hip, we return column indices for left hip-x, left hip-y and left hip-z
+        '''
+        random_key = self.reduced_labels['key'].iloc[0]
+        random_X = pd.read_csv(self.data_path+random_key+'.csv', index_col = 0)
+        permutation_features = [idx for idx, s in enumerate(random_X.columns) if permute_feature in s]
+        return permutation_features

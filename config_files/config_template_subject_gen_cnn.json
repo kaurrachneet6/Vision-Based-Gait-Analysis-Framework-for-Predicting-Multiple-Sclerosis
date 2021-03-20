@@ -1,7 +1,7 @@
 {"path": "C:\\Users\\Rachneet Kaur\\Box\\Gait Video Project\\GaitVideoData\\video\\",
 "data_path": "downsampled_strides\\", 
 "labels_file": "labels.csv",
-"results_path": "C:\\Users\\Rachneet Kaur\\Box\\Gait Video Project\\DLresults\\",
+"results_path": "C:\\Users\\Rachneet Kaur\\Box\\Gait Video Project\\AblationResults\\DL_feet_ankle\\",
 "model_path": "CNN1D\\",
 "model": "CNN1D",
 "prefix_name": "cnn1d_try_subject_gen",
@@ -13,10 +13,11 @@
 "num_workers":0,
 "behavior": "train",
 "saved_model_path": "cnn1d_try_2021_01_26-19_11_02_951362\\",
+"datastream": "feet_ankle",
 "param_net__batch_size": [100],
 "param_net__lr": [0.0001],
 "param_net__optimizer": ["torch.optim.Adam", "torch.optim.RMSprop"],
-"param_net__module__in_chans": [36],
+"param_net__module__in_chans": [24],
 "param_net__module__out_chans": [[64, 128, 64]], 
 "param_net__module__kernel_size": [[8, 5, 3]],
 "param_net__module__stride": [[1, 1, 1]],
@@ -33,5 +34,5 @@
 "param_net__module__global_average_pool": [false, true],
 "param_net__module__num_classes": [3],
 "param_net__module__time_steps": [20],
-"param_module__position_encoding": [true]
+"param_net__module__position_encoding": [true]
 }  

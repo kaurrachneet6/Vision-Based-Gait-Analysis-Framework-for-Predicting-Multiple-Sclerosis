@@ -13,6 +13,7 @@
 "num_workers":0,
 "behavior": "train",
 "saved_model_path": "cnn1d_try_2021_01_26-19_11_02_951362\\",
+"datastream": "All",
 "param_net__batch_size": [100],
 "param_net__lr": [0.0001],
 "param_net__optimizer": ["torch.optim.Adam", "torch.optim.RMSprop"],

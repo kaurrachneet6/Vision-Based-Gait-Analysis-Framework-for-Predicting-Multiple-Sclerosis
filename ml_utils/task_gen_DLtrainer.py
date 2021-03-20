@@ -118,7 +118,7 @@ class GaitTrainer():
         '''
         net = NeuralNet(
             model,
-            max_epochs = 2000,
+            max_epochs = 2,
             lr = .0001,
             criterion=nn.CrossEntropyLoss,
             optimizer=torch.optim.Adam,
@@ -569,6 +569,7 @@ class GaitTrainer():
         
         if self.parameter_dict['behavior'] == 'evaluate':
             self.training_time = 0
+            self.total_epochs = 0
             self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
 #             print (self.best_model.get_params())
 #             display (pd.DataFrame(self.best_model.history))
@@ -593,3 +594,119 @@ class GaitTrainer():
         self.evaluate() 
         self.plot_ROC()   
     
+
+    def task_gen_perm_imp_initial_setup(self):
+        '''
+        Permutation feature importance for task generalization initial setup
+        '''
+        #Task generalization W-> WT framework 
+        #Trial W for training 
+        self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
+        #Trial WT for testing 
+        self.trial_test = self.labels[self.labels['scenario']==self.test_framework]
+        #Returning the PIDs of common subjects in training and testing set
+        self.list_subjects_common_across_train_test()
+        #Note that both pids_retain_trialW, pids_retain_trialWT will be the same since we are only retaining common subjects in training and testing trials for a "pure" task generalization framework
+        
+        self.get_data_loaders('All') #Datastream is 'All' by default for feature importance 
+        self.create_folder_for_results()   
+        
+        self.training_time = 0
+        self.total_epochs = 0
+        self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
+#         print (self.best_model.get_params())
+#         display (pd.DataFrame(self.best_model.history))
+                    
+        #Count of parameters in the selected model
+        self.total_parameters = sum(p.numel() for p in self.best_model.module.parameters())        
+        self.trainable_params =  sum(p.numel() for p in self.best_model.module.parameters() if p.requires_grad)
+        self.nontrainable_params = self.total_parameters - self.trainable_params
+        
+        self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
+        self.Y_sl_test = SliceDataset(self.testing_data, idx = 1)
+        self.PID_sl_test = SliceDataset(self.testing_data, idx = 2)
+        
+        self.save_results = False
+        self.save_results_path = self.parameter_dict['results_path'] + '../PermImpResults/' + self.framework + '/' + self.parameter_dict['model_path']
+        self.evaluate() #To get self.metrics.index for making the dataframe of metrics for FI
+        self.perm_imp_results_df = pd.DataFrame(index = self.metrics.index)
+        
+
+    def permute_shuffle(self, x):
+        '''
+        Each element in the testing set has body coords for features of interest replaced with the shuffled version 
+        '''
+        for feat_index in self.feature_indices:
+            permuted_feature = self.X_shuffled[0]['body_coords'][:, feat_index]
+            x['body_coords'][:, feat_index] = permuted_feature
+        self.X_shuffled = self.X_shuffled[1:]
+        return x
+
+    
+    def permute_transform(self, X, y=None):
+        '''
+        Shuffle the desire features across the entire testing set 
+        '''
+        np.random.seed(random.randint(0, 100))
+        #Create a shuffled copy for the testing dataset
+        self.X_shuffled = shuffle(X)
+        X.transform = self.permute_shuffle
+    
+    
+    def task_gen_perm_imp_single_feature(self, feature):
+        '''
+        Running the permutation feature importance for a single feature(group) say, left big toe
+        Reference: https://christophm.github.io/interpretable-ml-book/feature-importance.html#fn35
+        5 times, randomly permute the features of interest and with the newly set X_test, run the .predict and evaluate (with the already trained best model [The best model is read and defined in self.task_gen_perm_imp_initial_setup()]). Collect the metrics for the 5 runs, and compute the mean and standard deviation. 
+        These metrics' mean and SD represent accuracy deleting the specific feature group, and thus lower the value than the original metric, more was the importance of the feature.
+        Save csv files for 5+2 columns (original 5 runs + mean + SD) and no. of evaluation metrics rows for each feature and return the mean and SD to be collected by the main setup function to make a final csv with mean and SD metrics for all feature groups. 
+        In this setup, we have 12 feature groups, namely left hip/knee/ankle/big toe/little toe/heel and similarly their right side counterparts. So this function should execute 12 times and return the corresponding mean and SD metrics. 
+        '''
+        #Column indices to permute in the X_sl_test_original to generate a new X_sl_test to predict and evaluate the trained model on 
+        self.feature_indices = self.testing_data.__define_column_indices_FI__(feature)
+        print (self.feature_indices)
+        #Repeating the shuffling 5 times for randomness in permutations
+        for idx in range(5):
+            #Shuffling the features of interest
+            self.permute_transform(self.X_sl_test)
+            #Predicting the best trained model on shuffled data and computing the metrics 
+            self.save_results_prefix = feature + '_' + str(idx)
+            self.evaluate()
+            #Saving the metrics 
+            self.perm_imp_results_df[self.save_results_prefix] = self.metrics
+            #Restoring back the original unpermuted version 
+            self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
+        feature_cols = [s for s in self.perm_imp_results_df.columns if feature in s]
+        #Aggregating the mean and SD from the 5 random runs
+        self.perm_imp_results_df[feature + '_' + 'mean'] = self.perm_imp_results_df[feature_cols].apply(pd.to_numeric, args=['coerce']).mean(axis=1, skipna=False)
+        self.perm_imp_results_df[feature + '_' + 'std'] = self.perm_imp_results_df[feature_cols].apply(pd.to_numeric, args=['coerce']).std(axis=1, skipna=False)        
+        
+    
+    def task_gen_perm_imp_main_setup(self):
+        '''
+        Main setup for the permutation feature importance for task gen 
+        Reference: https://christophm.github.io/interpretable-ml-book/feature-importance.html#fn35
+        '''
+        
+        self.task_gen_perm_imp_initial_setup()
+        
+        #12 Feature groups to explore the importance for 
+        features = ['right hip', 'right knee', 'right ankle', 'left hip', 'left knee', 'left ankle', 'left toe 1', 'left toe 2', 'left heel', 'right toe 1', 'right toe 2', 'right heel']
+    
+        for feature in features:
+            #For all 12 feature groups 
+            print ('Running for ', feature)
+            self.task_gen_perm_imp_single_feature(feature)
+        
+        display(self.perm_imp_results_df)
+        #Saving all the 7*12 columns for all 12 feature groups and all 5 runs+2(mean/std)
+        self.perm_imp_results_df.to_csv(self.save_path + 'Permutation_importance_all_results.csv')
+        
+        result_mean_cols = [s for s in  self.perm_imp_results_df.columns if 'mean' in s]
+        result_std_cols = [s for s in  self.perm_imp_results_df.columns if 'std' in s]
+        main_result_cols = result_mean_cols + result_std_cols
+        #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
+        self.perm_imp_results_df[main_result_cols].to_csv(self.save_path + 'Permutation_importance_only_main_results.csv')
+        
+        
+            

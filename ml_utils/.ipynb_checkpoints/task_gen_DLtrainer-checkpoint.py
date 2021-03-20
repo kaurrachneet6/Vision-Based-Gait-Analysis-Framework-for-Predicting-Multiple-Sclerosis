@@ -8,7 +8,7 @@ reload(gait_data_loader)
 from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
-from ml_utils.DLutils import save_model, load_model, FixRandomSeed
+from ml_utils.DLutils import save_model, load_model
 
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
@@ -20,7 +20,7 @@ class GaitTrainer():
         self.train_framework = self.parameter_dict['train_framework']
         self.test_framework = self.parameter_dict['test_framework']
         self.hyperparameter_grid = hyperparameter_grid
-        self.save_results_path = self.parameter_dict['results_path'] + self.framework + '\\' + self.parameter_dict['model_path']
+        self.save_results_path = self.parameter_dict['results_path'] + self.framework + '/' + self.parameter_dict['model_path']
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path
@@ -63,7 +63,7 @@ class GaitTrainer():
 
     
     
-    def get_data_loaders(self):
+    def get_data_loaders(self, datastream):
         '''
         To define the training and testing data loader to load X, y for training and testing sets in batches 
         Arguments:
@@ -80,7 +80,7 @@ class GaitTrainer():
         #Task generalization W-> WT framework 
         #Loading the full training data in one go to compute the training data's mean and standard deviation for normalization 
         #We set the batch_size = len(training_data) for the same 
-        training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework)   
+        training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, datastream = datastream)   
         training_data_loader = DataLoader(training_data, batch_size = len(training_data), shuffle = self.parameter_dict['shuffle'], \
                                           num_workers = self.parameter_dict['num_workers'])
         #Since we loaded all the training data in a single batch, we can read all data and target in one go
@@ -94,9 +94,9 @@ class GaitTrainer():
         #With training data mean/min and standard deviation/max-min computed, 
         #we can load the z-score/min-max normalized training and testing data in batches 
         self.training_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_train, framework = self.train_framework, \
-                                    train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_)   
+                                    datastream = datastream, train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_)   
         self.testing_data = GaitDataset(self.data_path, self.labels_file, self.pids_retain_test, framework = self.test_framework, \
-                                  train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_) 
+                                  datastream = datastream, train_frame_count_mean=self.train_frame_count_mean_, train_frame_count_std=self.train_frame_count_std_) 
 
         #To make sure the z-score/min-max normalization worked correctly 
         training_data_loader_check = DataLoader(self.training_data, batch_size = len(self.training_data), shuffle = self.parameter_dict['shuffle'], \
@@ -125,9 +125,9 @@ class GaitTrainer():
             device = device_,
             iterator_train__shuffle=True,
             train_split = skorch.dataset.CVSplit(5, random_state = 0), 
-            batch_size= -1, #Batch size = -1 means full data at once 
+            batch_size= 128, #Batch size = -1 means full data at once 
             callbacks=[EarlyStopping(patience = 100, lower_is_better = True, threshold=0.0001), 
-            (FixRandomSeed()),
+            (DLutils.FixRandomSeed()),
             #('lr_scheduler', LRScheduler(policy=torch.optim.lr_scheduler.StepLR, step_size = 500)),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = True, name = "train_acc")),
             (EpochScoring(scoring=DLutils.accuracy_score_multi_class, lower_is_better = False, on_train = False, name = "valid_acc"))
@@ -210,7 +210,7 @@ class GaitTrainer():
     def create_folder_for_results(self):
           #Create folder for saving results
         time_now = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_%f")
-        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"\\"
+        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"/"
         print("save path: ", self.save_path)
         os.mkdir(self.save_path)
         #Copy config file to results folder
@@ -223,6 +223,7 @@ class GaitTrainer():
         To plot the training/validation loss and accuracy (stride-wise) curves over epochs 
         '''
         model_history = self.grid_search.best_estimator_.history
+        self.total_epochs = len(model_history)
         epochs = [i for i in range(len(model_history))] #start from 1 instead of zero
 #         print (epochs)
         train_loss = model_history[:,'train_loss']
@@ -234,14 +235,17 @@ class GaitTrainer():
         #print("train_acc", train_acc, len(train_acc))
         #print("train_loss", train_loss, len(train_loss))x
         #print("valid_loss", valid_loss, len(valid_loss))
-        plt.plot(epochs,train_loss,'g*-'); #Dont print the last one for 3 built in
-        plt.plot(epochs,valid_loss,'r*-');
+        plt.plot(epochs,train_loss,'g-'); #Dont print the last one for 3 built in
+        plt.plot(epochs,valid_loss,'r-');
         try:
-            plt.plot(epochs,train_acc,'bo-');
+            plt.plot(epochs,train_acc,'b-');
         except:
-            plt.plot(epochs,train_acc[:-1],'bo-');
+            plt.plot(epochs[:-1],train_acc,'b-');
         #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
-        plt.plot(epochs,valid_acc, 'mo-');
+        try:
+            plt.plot(epochs,valid_acc, 'm-');
+        except:
+            plt.plot(epochs[:-1], valid_acc, 'm-');
         plt.title('Training/Validation loss and accuracy Curves');
         plt.xlabel('Epochs');
         plt.ylabel('Cross entropy loss/Accuracy');
@@ -425,7 +429,7 @@ class GaitTrainer():
         except:
             best_parameters = self.best_model.get_params()
             
-        self.metrics[self.save_results_prefix] = [acc, p_macro, p_micro, p_weighted, p_class_wise, r_macro, r_micro, r_weighted, r_class_wise, f1_macro, f1_micro, f1_weighted, f1_class_wise, auc_macro, auc_micro, auc_weighted, auc_class_wise, person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_micro, person_auc_weighted, person_auc_class_wise, self.training_time, self.eval_time, self.total_parameters, self.trainable_params, self.nontrainable_params, best_parameters]                                  
+        self.metrics[self.save_results_prefix] = [acc, p_macro, p_micro, p_weighted, p_class_wise, r_macro, r_micro, r_weighted, r_class_wise, f1_macro, f1_micro, f1_weighted, f1_class_wise, auc_macro, auc_micro, auc_weighted, auc_class_wise, person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_micro, person_auc_weighted, person_auc_class_wise, self.training_time, self.eval_time, self.total_parameters, self.trainable_params, self.nontrainable_params, best_parameters, self.total_epochs]                                  
                                     
         self.metrics.index = ['stride_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
                  'stride_precision_class_wise', 'stride_recall_macro', 'stride_recall_micro', \
@@ -439,7 +443,7 @@ class GaitTrainer():
                  'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
                  'person_AUC_macro', 'person_AUC_micro', 'person_AUC_weighted', 'person_AUC_class_wise', 'cross validation time',\
                               'eval time', 'Model Parameters', 'Trainable Parameters', 'Nontrainable Parameters',\
-                              'Best Parameters']  
+                              'Best Parameters', 'Total Epochs']  
         if self.save_results:
             self.metrics.to_csv(self.save_path + 'task_generalize_' + self.framework + '_result_metrics.csv')
 
@@ -520,7 +524,7 @@ class GaitTrainer():
 
         
     
-    def task_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5):
+    def task_gen_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = 'All'):
         #Task generalization W-> WT framework 
         #Trial W for training 
         self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
@@ -541,7 +545,7 @@ class GaitTrainer():
         print ('HOA, MS and PD strides in testing set:\n', trial_test_reduced['cohort'].value_counts())
         print ('Imbalance ratio (controls:MS:PD)= 1:X:Y\n', trial_test_reduced['cohort'].value_counts()/trial_test_reduced['cohort'].value_counts()['HOA'])
         
-        self.get_data_loaders()
+        self.get_data_loaders(datastream)
         self.create_folder_for_results()   
     
         if self.parameter_dict['behavior'] == 'train':
@@ -565,6 +569,7 @@ class GaitTrainer():
         
         if self.parameter_dict['behavior'] == 'evaluate':
             self.training_time = 0
+            self.total_epochs = 0
             self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
 #             print (self.best_model.get_params())
 #             display (pd.DataFrame(self.best_model.history))
@@ -589,3 +594,119 @@ class GaitTrainer():
         self.evaluate() 
         self.plot_ROC()   
     
+
+    def task_gen_perm_imp_initial_setup(self):
+        '''
+        Permutation feature importance for task generalization initial setup
+        '''
+        #Task generalization W-> WT framework 
+        #Trial W for training 
+        self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
+        #Trial WT for testing 
+        self.trial_test = self.labels[self.labels['scenario']==self.test_framework]
+        #Returning the PIDs of common subjects in training and testing set
+        self.list_subjects_common_across_train_test()
+        #Note that both pids_retain_trialW, pids_retain_trialWT will be the same since we are only retaining common subjects in training and testing trials for a "pure" task generalization framework
+        
+        self.get_data_loaders('All') #Datastream is 'All' by default for feature importance 
+        self.create_folder_for_results()   
+        
+        self.training_time = 0
+        self.total_epochs = 0
+        self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
+#         print (self.best_model.get_params())
+#         display (pd.DataFrame(self.best_model.history))
+                    
+        #Count of parameters in the selected model
+        self.total_parameters = sum(p.numel() for p in self.best_model.module.parameters())        
+        self.trainable_params =  sum(p.numel() for p in self.best_model.module.parameters() if p.requires_grad)
+        self.nontrainable_params = self.total_parameters - self.trainable_params
+        
+        self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
+        self.Y_sl_test = SliceDataset(self.testing_data, idx = 1)
+        self.PID_sl_test = SliceDataset(self.testing_data, idx = 2)
+        
+        self.save_results = False
+        self.save_results_path = self.parameter_dict['results_path'] + '../PermImpResults/' + self.framework + '/' + self.parameter_dict['model_path']
+        self.evaluate() #To get self.metrics.index for making the dataframe of metrics for FI
+        self.perm_imp_results_df = pd.DataFrame(index = self.metrics.index)
+        
+
+    def permute_shuffle(self, x):
+        '''
+        Each element in the testing set has body coords for features of interest replaced with the shuffled version 
+        '''
+        for feat_index in self.feature_indices:
+            permuted_feature = self.X_shuffled[0]['body_coords'][:, feat_index]
+            x['body_coords'][:, feat_index] = permuted_feature
+        self.X_shuffled = self.X_shuffled[1:]
+        return x
+
+    
+    def permute_transform(self, X, y=None):
+        '''
+        Shuffle the desire features across the entire testing set 
+        '''
+        np.random.seed(random.randint(0, 100))
+        #Create a shuffled copy for the testing dataset
+        self.X_shuffled = shuffle(X)
+        X.transform = self.permute_shuffle
+    
+    
+    def task_gen_perm_imp_single_feature(self, feature):
+        '''
+        Running the permutation feature importance for a single feature(group) say, left big toe
+        Reference: https://christophm.github.io/interpretable-ml-book/feature-importance.html#fn35
+        5 times, randomly permute the features of interest and with the newly set X_test, run the .predict and evaluate (with the already trained best model [The best model is read and defined in self.task_gen_perm_imp_initial_setup()]). Collect the metrics for the 5 runs, and compute the mean and standard deviation. 
+        These metrics' mean and SD represent accuracy deleting the specific feature group, and thus lower the value than the original metric, more was the importance of the feature.
+        Save csv files for 5+2 columns (original 5 runs + mean + SD) and no. of evaluation metrics rows for each feature and return the mean and SD to be collected by the main setup function to make a final csv with mean and SD metrics for all feature groups. 
+        In this setup, we have 12 feature groups, namely left hip/knee/ankle/big toe/little toe/heel and similarly their right side counterparts. So this function should execute 12 times and return the corresponding mean and SD metrics. 
+        '''
+        #Column indices to permute in the X_sl_test_original to generate a new X_sl_test to predict and evaluate the trained model on 
+        self.feature_indices = self.testing_data.__define_column_indices_FI__(feature)
+        print (self.feature_indices)
+        #Repeating the shuffling 5 times for randomness in permutations
+        for idx in range(5):
+            #Shuffling the features of interest
+            self.permute_transform(self.X_sl_test)
+            #Predicting the best trained model on shuffled data and computing the metrics 
+            self.save_results_prefix = feature + '_' + str(idx)
+            self.evaluate()
+            #Saving the metrics 
+            self.perm_imp_results_df[self.save_results_prefix] = self.metrics
+            #Restoring back the original unpermuted version 
+            self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
+        feature_cols = [s for s in self.perm_imp_results_df.columns if feature in s]
+        #Aggregating the mean and SD from the 5 random runs
+        self.perm_imp_results_df[feature + '_' + 'mean'] = self.perm_imp_results_df[feature_cols].apply(pd.to_numeric, args=['coerce']).mean(axis=1, skipna=False)
+        self.perm_imp_results_df[feature + '_' + 'std'] = self.perm_imp_results_df[feature_cols].apply(pd.to_numeric, args=['coerce']).std(axis=1, skipna=False)        
+        
+    
+    def task_gen_perm_imp_main_setup(self):
+        '''
+        Main setup for the permutation feature importance for task gen 
+        Reference: https://christophm.github.io/interpretable-ml-book/feature-importance.html#fn35
+        '''
+        
+        self.task_gen_perm_imp_initial_setup()
+        
+        #12 Feature groups to explore the importance for 
+        features = ['right hip', 'right knee', 'right ankle', 'left hip', 'left knee', 'left ankle', 'left toe 1', 'left toe 2', 'left heel', 'right toe 1', 'right toe 2', 'right heel']
+    
+        for feature in features:
+            #For all 12 feature groups 
+            print ('Running for ', feature)
+            self.task_gen_perm_imp_single_feature(feature)
+        
+        display(self.perm_imp_results_df)
+        #Saving all the 7*12 columns for all 12 feature groups and all 5 runs+2(mean/std)
+        self.perm_imp_results_df.to_csv(self.save_path + 'Permutation_importance_all_results.csv')
+        
+        result_mean_cols = [s for s in  self.perm_imp_results_df.columns if 'mean' in s]
+        result_std_cols = [s for s in  self.perm_imp_results_df.columns if 'std' in s]
+        main_result_cols = result_mean_cols + result_std_cols
+        #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
+        self.perm_imp_results_df[main_result_cols].to_csv(self.save_path + 'Permutation_importance_only_main_results.csv')
+        
+        
+            
