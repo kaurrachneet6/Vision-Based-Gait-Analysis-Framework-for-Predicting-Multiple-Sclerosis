@@ -45,7 +45,7 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **SubjectGeneralize_Conv1D.ipynb**: 1D CNN algorithm on subject generalization frameworks, 1: W, 2: WT, 3: VBW, 4: VBWT using cross validation (we use stratified group K folds here) to classify HOA/MS/PD strides and subjects.
 
 #### Discussion analysis
-*  **FeatureImportance.ipynb**: 
+*  ** TaskGen_PermutationImportance.py**:  Permutation Importance based feature importance for the task generalization framework. Basically, for each feature of interest, say, right knee, we randomly shuffle the right knee-based features in our data, i.e. right knee-x/y/z 5 times and each time compute the evaluation metrics by predicting on this new shuffled test set data. The trained model used for predictions is the best tuned model for the task generalization framework.
 
 ### Citation:
 If you use this code, please consider citing our work:
