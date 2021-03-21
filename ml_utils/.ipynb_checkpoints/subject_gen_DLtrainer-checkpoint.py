@@ -21,7 +21,7 @@ class GaitTrainer():
         self.comparision_frameworks = self.parameter_dict['comparision_frameworks']
         self.scenario = self.parameter_dict['scenario']
         self.hyperparameter_grid = hyperparameter_grid
-        self.save_results_path = self.parameter_dict['results_path']  + self.framework + '\\'+ self.parameter_dict['model_path']
+        self.save_results_path = self.parameter_dict['results_path']  + self.framework + '/'+ self.parameter_dict['model_path']
         self.save_results_prefix = self.parameter_dict['prefix_name'] + '_'
         self.save_results = self.parameter_dict['save_results']
         self.config_path = config_path
@@ -57,7 +57,7 @@ class GaitTrainer():
     def create_folder_for_results(self):
         #Create folder for saving results
         time_now = datetime.now().strftime("%Y_%m_%d-%H_%M_%S_%f")
-        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"\\"
+        self.save_path = self.save_results_path + self.save_results_prefix + time_now+"/"
         print("save path: ", self.save_path)
         os.mkdir(self.save_path)
         #Copy config file to results folder
@@ -75,7 +75,7 @@ class GaitTrainer():
         '''
         net = NeuralNet(
             model,
-            max_epochs = 2,
+            max_epochs = 2000,
             lr = .0001,
             criterion=nn.CrossEntropyLoss,
             optimizer=torch.optim.Adam,
@@ -479,7 +479,7 @@ class GaitTrainer():
             plt.savefig(self.save_path + 'CFmatrix_subject_generalize_' + self.framework + '.png', dpi = 350)
         plt.show()
 
-        stride_person_metrics = [stride_metrics_mean, stride_metrics_std, person_means, person_stds, [self.training_time], [self.best_params], [self.total_parameters], [self.trainable_params], [self.nontrainable_params]]
+        stride_person_metrics = [stride_metrics_mean, stride_metrics_std, person_means, person_stds, [self.training_time], [self.best_params], [self.total_parameters], [self.trainable_params], [self.nontrainable_params], [str(self.total_epochs)]]
         
         self.metrics = pd.DataFrame(columns = [self.save_results_prefix]) #Dataframe to store accuracies for each ML model for raw data 
         self.metrics[self.save_results_prefix] = sum(stride_person_metrics, [])
@@ -493,7 +493,9 @@ class GaitTrainer():
                  'person_recall_weighted', 'person_recall_class_wise', \
                  'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
                  'person_AUC_macro', 'person_AUC_weighted']   
-        self.metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params']
+        print ('metrics', self.metrics)
+        print ('metrics index', [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs'])
+        self.metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs']
     
         #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
         if self.save_results:
@@ -576,7 +578,8 @@ class GaitTrainer():
         pipe_optimized = self.pipe.set_params(**self.best_params)
         #List of history dataframes over n_splits folds 
         histories = []     
-        
+        self.total_epochs = []
+
         for fold, (train_ix, val_ix) in enumerate(self.gkf.split(self.X_sl_, self.Y_sl_, groups=self.PID_sl_)):
             # select rows for train and test
             trainX, trainY, valX, valY = self.X_sl[train_ix], self.Y_sl[train_ix], self.X_sl[val_ix], self.Y_sl[val_ix]
@@ -589,26 +592,30 @@ class GaitTrainer():
                 history_fold.to_csv(self.save_path + 'history_fold_' + str(fold+1) + '.csv')
             histories.append(history_fold)
           
-            for idx in range(len(histories)):
-                model_history = histories[idx]
-                epochs = model_history['epoch'].values #start from 1 instead of zero
-                train_loss = model_history['train_loss'].values
-        #         print (train_loss)
-                valid_loss = model_history['valid_loss'].values
-                train_acc = model_history['train_acc'].values
-                valid_acc = model_history['valid_acc'].values
-                #print("epochs", epochs, len(epochs))
-                #print("train_acc", train_acc, len(train_acc))
-                #print("train_loss", train_loss, len(train_loss))
-                #print("valid_loss", valid_loss, len(valid_loss))
-                plt.plot(epochs,train_loss,'g*--'); #Dont print the last one for 3 built in
-                plt.plot(epochs,valid_loss,'r*-');
-                try:
-                    plt.plot(epochs,train_acc,'bo--');
-                except:
-                    plt.plot(epochs,train_acc[:-1],'bo-');
-                #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
-                plt.plot(epochs,valid_acc, 'mo-');
+        for idx in range(len(histories)):
+            model_history = histories[idx]
+            epochs = model_history['epoch'].values #start from 1 instead of zero
+            self.total_epochs.append(len(epochs))
+            train_loss = model_history['train_loss'].values
+    #         print (train_loss)
+            valid_loss = model_history['valid_loss'].values
+            train_acc = model_history['train_acc'].values
+            valid_acc = model_history['valid_acc'].values
+            #print("epochs", epochs, len(epochs))
+            #print("train_acc", train_acc, len(train_acc))
+            #print("train_loss", train_loss, len(train_loss))
+            #print("valid_loss", valid_loss, len(valid_loss))
+            plt.plot(epochs,train_loss,'g--'); #Dont print the last one for 3 built in
+            plt.plot(epochs,valid_loss,'r-');
+            try:
+                plt.plot(epochs,train_acc,'b--');
+            except:
+                plt.plot(epochs,train_acc[:-1],'b-');
+            #plt.plot(np.arange(len(train_acc)),train_acc, 'b-'); #epochs and train_acc are off by one
+            try:
+                plt.plot(epochs,valid_acc, 'm-');
+            except:
+                plt.plot(epochs[:-1], valid_acc, 'm-');
         plt.title('Training/Validation loss and accuracy Curves');
         plt.xlabel('Epochs');
         plt.ylabel('Cross entropy loss/Accuracy');
@@ -620,7 +627,7 @@ class GaitTrainer():
         
             
             
-    def subject_gen_setup(self, model_class = None, model = None, device_ = torch.device("cuda"), n_splits_ = 5):        
+    def subject_gen_setup(self, model_class = None, model = None, device_ = torch.device("cuda"), n_splits_ = 5, datastream = "All"):        
         self.device = device_
         if "comparision" in self.framework:
             #Case when we need to retain common subjects in W and WT to compare them
@@ -657,7 +664,7 @@ class GaitTrainer():
         #Get dataloader 
         #Subject generalization W or WT framework 
         #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
-        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario)      
+        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario, datastream = datastream)      
         self.create_folder_for_results()   
         self.torch_model = model
         self.torch_model_class = model_class
@@ -673,3 +680,43 @@ class GaitTrainer():
             self.learning_curves()    
         self.evaluate(n_splits_) 
         self.plot_ROC() 
+
+        
+    '''
+    Permutation Feature Importance 
+    '''
+    def task_gen_perm_imp_initial_setup(self):
+        '''
+        Permutation feature importance for task generalization initial setup
+        '''
+        #Task generalization W-> WT framework 
+        #Trial W for training 
+        self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
+        #Trial WT for testing 
+        self.trial_test = self.labels[self.labels['scenario']==self.test_framework]
+        #Returning the PIDs of common subjects in training and testing set
+        self.list_subjects_common_across_train_test()
+        #Note that both pids_retain_trialW, pids_retain_trialWT will be the same since we are only retaining common subjects in training and testing trials for a "pure" task generalization framework
+        
+        self.get_data_loaders('All') #Datastream is 'All' by default for feature importance 
+        self.create_folder_for_results()   
+        
+        self.training_time = 0
+        self.total_epochs = 0
+        self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
+#         print (self.best_model.get_params())
+#         display (pd.DataFrame(self.best_model.history))
+                    
+        #Count of parameters in the selected model
+        self.total_parameters = sum(p.numel() for p in self.best_model.module.parameters())        
+        self.trainable_params =  sum(p.numel() for p in self.best_model.module.parameters() if p.requires_grad)
+        self.nontrainable_params = self.total_parameters - self.trainable_params
+        
+        self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
+        self.Y_sl_test = SliceDataset(self.testing_data, idx = 1)
+        self.PID_sl_test = SliceDataset(self.testing_data, idx = 2)
+        
+        self.save_results = False
+        self.save_results_path = self.parameter_dict['results_path'] + '../PermImpResults/' + self.framework + '/' + self.parameter_dict['model_path']
+        self.evaluate() #To get self.metrics.index for making the dataframe of metrics for FI
+        self.perm_imp_results_df = pd.DataFrame(index = self.metrics.index)

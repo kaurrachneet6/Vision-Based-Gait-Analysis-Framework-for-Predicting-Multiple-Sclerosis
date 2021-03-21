@@ -594,7 +594,9 @@ class GaitTrainer():
         self.evaluate() 
         self.plot_ROC()   
     
-
+    '''
+    Permutation Feature Importance 
+    '''
     def task_gen_perm_imp_initial_setup(self):
         '''
         Permutation feature importance for task generalization initial setup
@@ -700,13 +702,13 @@ class GaitTrainer():
         
         display(self.perm_imp_results_df)
         #Saving all the 7*12 columns for all 12 feature groups and all 5 runs+2(mean/std)
-        self.perm_imp_results_df.to_csv(self.save_path + 'Permutation_importance_all_results.csv')
+        self.perm_imp_results_df.to_csv(self.save_results_path + 'Permutation_importance_all_results.csv')
         
         result_mean_cols = [s for s in  self.perm_imp_results_df.columns if 'mean' in s]
         result_std_cols = [s for s in  self.perm_imp_results_df.columns if 'std' in s]
         main_result_cols = result_mean_cols + result_std_cols
         #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
-        self.perm_imp_results_df[main_result_cols].to_csv(self.save_path + 'Permutation_importance_only_main_results.csv')
+        self.perm_imp_results_df[main_result_cols].to_csv(self.save_results_path + 'Permutation_importance_only_main_results.csv')
         
         
             
