@@ -496,7 +496,7 @@ class GaitTrainer():
                  'person_F1_macro', 'person_F1_micro', 'person_F1_weighted', 'person_F1_class_wise', \
                  'person_AUC_macro', 'person_AUC_weighted']   
         print ('metrics', self.metrics)
-        print ('metrics index', [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs'])
+#         print ('metrics index', [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs'])
         self.metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics] + ['training_time', 'best_parameters']  + ['total_parameters', 'trainable_params', 'nontrainable_params', 'Total Epochs']
     
         #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
