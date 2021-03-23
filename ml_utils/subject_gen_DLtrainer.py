@@ -289,7 +289,7 @@ class GaitTrainer():
     
     
 
-    def train(self, n_splits_ = 5):
+    def train(self, n_splits_ = 5, feature_importance = False):
         '''
         Tunes and trains skorch model for task generalization
         Arguments:
@@ -311,8 +311,10 @@ class GaitTrainer():
         
 #         print ('Shuffled PID and Y:', self.PID_sl_, self.Y_sl_)        
         self.yoriginal, self.ypredicted = [], []
-        self.pipe = Pipeline([('scale', custom_StandardScaler()), ('net', self.model)])
-        
+        if not feature_importance:
+            self.pipe = Pipeline([('scale', custom_StandardScaler()), ('net', self.model)])
+        else:
+            self.pipe = Pipeline([('scale', custom_StandardScaler()), ('permutation', PermuteTransform(self.feature_indices)), ('net', self.model)])
         self.gkf = StratifiedGroupKFold(n_splits=n_splits_)  
         self.scores = {'accuracy': self.accuracy_score_multi_class_cv, 'precision_macro': self.precision_macro_score_multi_class_cv, 'precision_micro': self.precision_micro_score_multi_class_cv, 'precision_weighted': self.precision_weighted_score_multi_class_cv, 'recall_macro': self.recall_macro_score_multi_class_cv, 'recall_micro': self.recall_micro_score_multi_class_cv, 'recall_weighted': self.recall_weighted_score_multi_class_cv, 'f1_macro': self.f1_macro_score_multi_class_cv, 'f1_micro': self.f1_micro_score_multi_class_cv, 'f1_weighted': self.f1_weighted_score_multi_class_cv, 'auc_macro': self.auc_macro_score_multi_class_cv, 'auc_weighted': self.auc_weighted_score_multi_class_cv}
         
@@ -685,38 +687,120 @@ class GaitTrainer():
     '''
     Permutation Feature Importance 
     '''
-    def task_gen_perm_imp_initial_setup(self):
+    def subject_gen_perm_imp_initial_setup(self, model_class = None, model = None, device_ = torch.device("cuda")):
         '''
-        Permutation feature importance for task generalization initial setup
+        Permutation feature importance for subject generalization initial setup
         '''
-        #Task generalization W-> WT framework 
-        #Trial W for training 
-        self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
-        #Trial WT for testing 
-        self.trial_test = self.labels[self.labels['scenario']==self.test_framework]
-        #Returning the PIDs of common subjects in training and testing set
-        self.list_subjects_common_across_train_test()
-        #Note that both pids_retain_trialW, pids_retain_trialWT will be the same since we are only retaining common subjects in training and testing trials for a "pure" task generalization framework
+        self.device = device_
+        #Case when we can use all subjects in W or WT for full analysis 
+        #Subject generalization W/WT framework 
+        #Trial W/WT for training and testing both
+        self.trial = self.labels[self.labels['scenario']==self.scenario]
+        print ('Original number of subjects in trial ', self.scenario, ' for cross validation:', len(self.trial['PID'].unique()))
+        print ('Number of subjects in trial ', self.scenario, ' in each cohort:\n', self.trial.groupby('PID').first()['cohort'].value_counts())
+        #Total strides and imbalance of labels in the training and testing set
+        #Training set 
+        print('Strides in trial ', self.scenario, ' W for cross validation: ', len(self.trial))
+        print ('HOA, MS and PD strides in trial ', self.scenario, ' :\n', self.trial['cohort'].value_counts())
+        print ('Imbalance ratio in trial ', self.scenario, ' (controls:MS:PD)= 1:X:Y\n', self.trial['cohort'].value_counts()/self.trial['cohort'].value_counts()['HOA'])
+
+        print ('PIDs getting used in this run: ', self.trial['PID'].unique())        
         
-        self.get_data_loaders('All') #Datastream is 'All' by default for feature importance 
+        #Get dataloader 
+        #Subject generalization W or WT framework 
+        #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
+        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario, datastream = 'All')      
         self.create_folder_for_results()   
-        
-        self.training_time = 0
-        self.total_epochs = 0
-        self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
-#         print (self.best_model.get_params())
-#         display (pd.DataFrame(self.best_model.history))
-                    
-        #Count of parameters in the selected model
-        self.total_parameters = sum(p.numel() for p in self.best_model.module.parameters())        
-        self.trainable_params =  sum(p.numel() for p in self.best_model.module.parameters() if p.requires_grad)
-        self.nontrainable_params = self.total_parameters - self.trainable_params
-        
-        self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
-        self.Y_sl_test = SliceDataset(self.testing_data, idx = 1)
-        self.PID_sl_test = SliceDataset(self.testing_data, idx = 2)
-        
+        self.torch_model = model
+        self.torch_model_class = model_class
+        self.model = self.create_model(self.torch_model, device_)
+        self.X_sl = SliceDataset(self.data, idx = 0)
+        self.Y_sl = SliceDataset(self.data, idx = 1)
+        self.PID_sl = SliceDataset(self.data, idx = 2)
+
         self.save_results = False
         self.save_results_path = self.parameter_dict['results_path'] + '../PermImpResults/' + self.framework + '/' + self.parameter_dict['model_path']
-        self.evaluate() #To get self.metrics.index for making the dataframe of metrics for FI
+        self.total_epochs = 0
+        self.train(2) #Trainign only for 2 splits here because we just want the metrics index from this run and not the real results 
+        self.evaluate(2) #To get self.metrics.index for making the dataframe of metrics for FI
         self.perm_imp_results_df = pd.DataFrame(index = self.metrics.index)
+            
+    
+    def subject_gen_perm_imp_single_feature(self, feature, n_splits_):   
+        #Column indices to permute in the X_sl_test_original to generate a new X_sl_test to predict and evaluate the trained model on 
+        self.feature_indices = self.data.__define_column_indices_FI__(feature)
+        print (self.feature_indices)
+        #Repeating the shuffling 5 times for randomness in permutations
+        for idx in range(5):
+            #Restoring back the original unpermuted version 
+            self.X_sl = SliceDataset(self.data, idx = 0)
+            #Shuffling the features of interest
+            self.train(n_splits_, feature_importance = True)
+            #Predicting the best trained model on shuffled data and computing the metrics 
+            self.save_results_prefix = feature + '_' + str(idx)
+            self.evaluate(n_splits_) 
+            #Saving the metrics 
+            self.perm_imp_results_df[self.save_results_prefix] = self.metrics
+        feature_cols = [s for s in self.perm_imp_results_df.columns if feature in s]
+        #Aggregating the mean and SD from the 5 random runs
+        self.perm_imp_results_df[feature + '_' + 'mean'] = self.perm_imp_results_df[feature_cols].apply(pd.to_numeric, args=['coerce']).mean(axis=1, skipna=False)
+        self.perm_imp_results_df[feature + '_' + 'std'] = self.perm_imp_results_df[feature_cols].apply(pd.to_numeric, args=['coerce']).std(axis=1, skipna=False)        
+        
+        
+    def subject_gen_perm_imp_main_setup(self, model_class = None, model = None, device_ = torch.device("cuda"), n_splits_ = 5):
+        '''
+        Main setup for the permutation feature importance for subject gen 
+        Reference: https://christophm.github.io/interpretable-ml-book/feature-importance.html#fn35
+        '''
+        self.subject_gen_perm_imp_initial_setup(model_class, model, device_)
+        
+        #12 Feature groups to explore the importance for 
+        features = ['right hip', 'right knee', 'right ankle', 'left hip', 'left knee', 'left ankle', 'left toe 1', 'left toe 2', 'left heel', 'right toe 1', 'right toe 2', 'right heel']
+    
+        for feature in features:
+            #For all 12 feature groups 
+            print ('Running for ', feature)
+            self.subject_gen_perm_imp_single_feature(feature, n_splits_)
+        
+        display(self.perm_imp_results_df)
+        #Saving all the 7*12 columns for all 12 feature groups and all 5 runs+2(mean/std)
+        self.perm_imp_results_df.to_csv(self.save_results_path + 'Permutation_importance_all_results.csv')
+        
+        result_mean_cols = [s for s in  self.perm_imp_results_df.columns if 'mean' in s]
+        result_std_cols = [s for s in  self.perm_imp_results_df.columns if 'std' in s]
+        main_result_cols = result_mean_cols + result_std_cols
+        #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
+        self.perm_imp_results_df[main_result_cols].to_csv(self.save_results_path + 'Permutation_importance_only_main_results.csv')
+        
+        
+class PermuteTransform():
+    '''
+    Class for permutation for features of interest for the testing folds with model trained on original features in the training folds 
+    '''
+    def __init__(self, feature_indices_):
+        self.feature_indices_ = feature_indices_
+
+    def permute_shuffle(self, x):
+        '''
+        Each element in the testing set has body coords for features of interest replaced with the shuffled version 
+        '''
+        for feat_index in self.feature_indices_:
+            permuted_feature = self.X_shuffled[0]['body_coords'][:, feat_index]
+            x['body_coords'][:, feat_index] = permuted_feature
+        self.X_shuffled = self.X_shuffled[1:]
+        return x
+
+    def transform(self, X, y=None):
+        '''
+        Shuffle the desire features across the entire testing set 
+        '''
+        #Create a shuffled copy for the testing dataset
+        self.X_shuffled = shuffle(X, random_state = random.randint(0, 100))
+        X.transform = self.permute_shuffle
+        return X
+        
+    def fit_transform(self, X, y=None):
+        '''
+        We do not need to shuffle the training set, so we return it as is
+        '''
+        return X
