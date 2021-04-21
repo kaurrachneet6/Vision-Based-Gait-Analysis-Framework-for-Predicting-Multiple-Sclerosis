@@ -710,5 +710,44 @@ class GaitTrainer():
         #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
         self.perm_imp_results_df[main_result_cols].to_csv(self.save_results_path + 'Permutation_importance_only_main_results.csv')
         
+                
+    '''
+    SHAP-based Feature Importance 
+    '''
+    def task_gen_shap_initial_setup(self):
+        '''
+        SHAP Feature Importance for task generalization initial setup
+        '''
+        #Task generalization W-> WT framework 
+        #Trial W for training 
+        self.trial_train = self.labels[self.labels['scenario']==self.train_framework]
+        #Trial WT for testing 
+        self.trial_test = self.labels[self.labels['scenario']==self.test_framework]
+        #Returning the PIDs of common subjects in training and testing set
+        self.list_subjects_common_across_train_test()
+        #Note that both pids_retain_trialW, pids_retain_trialWT will be the same since we are only retaining common subjects in training and testing trials for a "pure" task generalization framework
+        
+        self.get_data_loaders('All') #Datastream is 'All' by default for feature importance 
+        self.create_folder_for_results()   
+        self.X_sl_train = SliceDataset(self.training_data, idx = 0)
+        self.Y_sl_train = SliceDataset(self.training_data, idx = 1)
+        self.PID_sl_train = SliceDataset(self.training_data, idx = 2)
+            
+        self.training_time = 0
+        self.total_epochs = 0
+        self.best_model = load_model(self.save_results_path + self.parameter_dict['saved_model_path'])
+#         print (self.best_model.get_params())
+#         display (pd.DataFrame(self.best_model.history))
+                    
+        #Count of parameters in the selected model
+        self.total_parameters = sum(p.numel() for p in self.best_model.module.parameters())        
+        self.trainable_params =  sum(p.numel() for p in self.best_model.module.parameters() if p.requires_grad)
+        self.nontrainable_params = self.total_parameters - self.trainable_params
+        
+        self.X_sl_test = SliceDataset(self.testing_data, idx = 0)
+        self.Y_sl_test = SliceDataset(self.testing_data, idx = 1)
+        self.PID_sl_test = SliceDataset(self.testing_data, idx = 2)
+        self.save_results_path = self.parameter_dict['results_path'] + '../SHAPResults/' + self.framework + '/' + self.parameter_dict['model_path']
+        
         
             
