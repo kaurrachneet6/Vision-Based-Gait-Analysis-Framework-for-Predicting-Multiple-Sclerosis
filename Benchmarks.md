@@ -89,4 +89,5 @@
         * F1 Macro = 0.438±0.166 (mlp), F1 Micro = 0.5±0.15 (decision_tree), F1 Weighted = 0.572±0.163 (decision_tree), F1 class wise = [0.8 ± 0.273, 0.7 ± 0.447, 0.133 ±0.182] (decision_tree)
         * AUC Macro = 0.733±0.118 (mlp), AUC Weighted = 0.752±0.096 (mlp)
 
-
+### Single stride traditional ML-based benchmark results for the Ablation Study
+* **Task generalization (W -> WT)**
