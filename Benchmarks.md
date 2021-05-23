@@ -91,17 +91,60 @@
 
 ### Single stride traditional ML-based benchmark results for the Ablation Study
 * **Task generalization (W -> WT)**
-    * Feet:
+    * Feet (+speed): [Linear SVM]
         * Stride-wise metrics: 
-            * Accuracy = 0.8307 (XGBoost)
-            * Precision Macro = 0.835 (XGBoost), Precision Micro = 0.8307 (XGBoost), Precision Weighted = 0.834 (XGBoost), Precision class wise = [0.774, 0.832, 0.899] (XGBoost)
-            * Recall Macro = 0.829 (XGBoost), Recall Micro = 0.8307 (XGBoost), Recall Weighted = 0.8307 (XGBoost), Recall class wise = [0.888, 0.716, 0.882] (XGBoost)
-            * F1 Macro = 0.829 (XGBoost), F1 Micro = 0.8307 (XGBoost), F1 Weighted = 0.829 (XGBoost), F1 class wise = [0.827, 0.770, 0.890] (XGBoost)
-            * AUC Macro = 0.945 (GBM), AUC Weighted = 0.945 (GBM)
+            * Accuracy = 0.7303 
+            * Precision Macro = 0.739, Precision Micro = 0.7303, Precision Weighted = 0.738, Precision class wise = [0.664 0.706 0.848]
+            * Recall Macro = 0.729, Recall Micro = 0.730, Recall Weighted = 0.730, Recall class wise = [0.772 0.674  0.741]
+            * F1 Macro = 0.732, F1 Micro = 0.730, F1 Weighted = 0.731, F1 class wise = [0.714  0.690 0.791]
+            * AUC Macro = 0.871, AUC Weighted = 0.871
         * Subject-wise metrics: 
-            * Accuracy = 0.96 (GBM/Linear SVM)
-            * Precision Macro = 0.962 (GBM/Linear SVM), Precision Micro = 0.96 (GBM/Linear SVM), Precision Weighted = 0.964 (GBM/Linear SVM), Precision class wise = [0.88, 1, 1] (GBM/Linear SVM)
-            * Recall Macro = 0.962 (GBM/Linear SVM), Recall Micro = 0.96 (GBM/Linear SVM), Recall Weighted = 0.96 (GBM/Linear SVM), Recall class wise = [1, 0.88, 1] (GBM/Linear SVM)
-            * F1 Macro = 0.960 (GBM/Linear SVM), F1 Micro = 0.96 (GBM/Linear SVM), F1 Weighted = 0.96 (GBM/Linear SVM), F1 class wise = [0.941, 0.941, 1] (GBM/Linear SVM)
-            * AUC Macro = 1 (Linear SVM/GBM/XGBoost/Logistic Regression), AUC Weighted = 1 (Linear SVM/GBM/XGBoost/Logistic Regression)
+            * Accuracy = 0.92
+            * Precision Macro = 0.933, Precision Micro = 0.92, Precision Weighted = 0.935, Precision class wise = [0.8 1.  1. ]
+            * Recall Macro = 0.925, Recall Micro = 0.92, Recall Weighted = 0.92, Recall class wise = [1. 0.777 1. ]
+            * F1 Macro = 0.921, F1 Micro = 0.92, F1 Weighted = 0.919, F1 class wise = [0.88888889 0.875 1. ]
+            * AUC Macro = 0.988, AUC Weighted = 0.988
+
+    * Feet + Ankle (+speed): [Linear SVM]
+        * Stride-wise metrics: 
+            * Accuracy = 0.720
+            * Precision Macro = 0.727, Precision Micro = 0.720, Precision Weighted = 0.726, Precision class wise = [0.656 0.713 0.813]
+            * Recall Macro = 0.719, Recall Micro = 0.720, Recall Weighted = 0.720, Recall class wise = [0.760 0.653 0.744]
+            * F1 Macro = 0.721, F1 Micro = 0.720, F1 Weighted = 0.721, F1 class wise = [0.704 0.682 0.777]
+            * AUC Macro = 0.871, AUC Weighted = 0.871
+        * Subject-wise metrics: 
+            * Accuracy = 0.92
+            * Precision Macro = 0.933, Precision Micro = 0.92, Precision Weighted = 0.935, Precision class wise = [0.8 1.  1. ]
+            * Recall Macro = 0.925, Recall Micro = 0.92, Recall Weighted = 0.92, Recall class wise = [1. 0.777 1. ]
+            * F1 Macro = 0.921, F1 Micro = 0.92, F1 Weighted = 0.919, F1 class wise = [0.88888889 0.875 1. ]
+            * AUC Macro = 0.995, AUC Weighted = 0.995
+
+    * Feet + Ankle + Knee (+speed): [MLP]
+        * Stride-wise metrics: 
+            * Accuracy = 0.797
+            * Precision Macro = 0.804, Precision Micro =  0.797, Precision Weighted = 0.803, Precision class wise = [0.748 0.761 0.903]
+            * Recall Macro = 0.795, Recall Micro = 0.797, Recall Weighted =  0.797, Recall class wise = [0.866 0.731 0.789]
+            * F1 Macro = 0.797, F1 Micro = 0.797, F1 Weighted = 0.797, F1 class wise = [0.803 0.746 0.842]
+            * AUC Macro = 0.919, AUC Weighted = 0.919
+        * Subject-wise metrics: 
+            * Accuracy = 1.0
+            * Precision Macro = 1, Precision Micro = 1, Precision Weighted = 1, Precision class wise = [1 1.  1. ]
+            * Recall Macro = 1, Recall Micro = 1, Recall Weighted = 0.92, Recall class wise = [1. 1 1. ]
+            * F1 Macro = 1, F1 Micro = 1, F1 Weighted = 1, F1 class wise = [1 1 1. ]
+            * AUC Macro = 1, AUC Weighted = 1
+
+* **Subject generalization (W)**
+    * Feet (+speed): [] 
+        * Stride-wise metrics: 
+            * Accuracy = 0.576$`\pm`$0.06 (Logistic Regression)
+            * Precision Macro = 0.565$`\pm`$0.06 (Logistic Regression), Precision Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Precision Weighted = 0.60 $`\pm`$ 0.07, Precision class wise = [0.68$`\pm`$0.10, 0.517$`\pm`$0.12, 0.497$`\pm`$0.13] (Logistic Regression)
+            * Recall Macro = 0.557$`\pm`$0.06 (Logistic Regression), Recall Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Recall Weighted = 0.576 $`\pm`$ 0.06 (Logistic Regression), Recall class wise = [0.67 $`\pm`$ 0.16, 0.56 $`\pm`$ 0.12, 0.43 $`\pm`$ 0.17] (Logistic Regression)
+            * F1 Macro = 0.542 $`\pm`$ 0.05 (Logistic Regression), F1 Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), F1 Weighted = 0.5709 $`\pm`$ 0.06 (Logistic Regression), F1 class wise = [0.66 $`\pm`$ 0.103, 0.534 $`\pm`$ 0.117, 0.424 $`\pm`$ 0.052] (Logistic Regression)
+            * AUC Macro = 0.731 $`\pm`$ 0.046 (Logistic Regression), AUC Weighted = 0.7309 $`\pm`$ 0.047 (Logistic Regression)
+        * Subject-wise metrics: 
+            * Accuracy = 0.6904 $`\pm`$ 0.17 (Logistic Regression)
+            * Precision Macro = 0.711 ± 0.177 (logistic_regression), Precision Micro = 0.69 ± 0.172 (logistic_regression), Precision Weighted = 0.832 ± 0.084 (linear_svm), Precision class wise = [0.833 ± 0.235, 0.2 ± 0.27, 0.2 ± 0.447] (kernel_svm)
+            * Recall Macro = 0.7 ± 0.213 (logistic_regression), Recall Micro = 0.69 ± 0.172 (logistic_regression), Recall Weighted = 0.69 ± 0.172 (logistic_regression), Recall class wise = [0.866 ± 0.182, 0.633 ± 0.217, 0.6 ± 0.418] (logistic_regression)
+            * F1 Macro = 0.671 ± 0.19 (logistic_regression), F1 Micro = 0.69 ± 0.172 (logistic_regression), F1 Weighted = 0.71 ± 0.157 (logistic_regression) , F1 class wise = [0.833 ± 0.235, 0.2 ± 0.273, 0.2 ± 0.447] (kernel_svm)
+            * AUC Macro = 0.844 ± 0.104 (decision_tree), AUC Weighted = 0.843 ± 0.103 (decision_tree) 
 
