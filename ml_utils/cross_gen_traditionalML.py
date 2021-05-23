@@ -72,6 +72,7 @@ def compute_train_test_indices_split(train_test_concatenated, X_train_common, Y_
         train_indices: list of lists of .iloc indices for training folds 
         test_indices: list of lists of .iloc indices for testing folds 
     '''
+    first_index = True
     #List to append lists of training and test indices for each CV fold
     train_indices, test_indices = [], []
     #PIDs define the groups for stratified group 5-fold CV
@@ -108,7 +109,10 @@ def compute_train_test_indices_split(train_test_concatenated, X_train_common, Y_
         test_split_indices = train_test_concatenated[(train_test_concatenated.PID.isin(test_split_pids)) \
                                                      & (train_test_concatenated.scenario==test_framework)].index
         #Concatenating the indices of strides for PIDs in testing only and CV split testing PIDs 
-        test_split_indices = test_split_indices.union(test_only_indices)
+        if first_index:
+            #Concatenating the indices of strides for PIDs in testing only and CV split testing PIDs 
+            test_split_indices = test_split_indices.union(test_only_indices)
+            first_index = False
     #     print (test_split_indices, test_split_indices.shape)
         #Appending the testing indices for the current fold 
         test_indices.append(test_split_indices)
@@ -120,7 +124,7 @@ def compute_train_test_indices_split(train_test_concatenated, X_train_common, Y_
 
 
 
-def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_name, results_path, save_results = True):
+def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_name, results_path, save_results = True, datastream_name = 'All'):
 #     print ('yoriginal_', yoriginal_)
 #     print ('ypredicted_', ypredicted_)
     '''
@@ -236,9 +240,9 @@ def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_nam
     #stride and subject wise confusion matrix for each model
     if save_results:
         test_strides_true_predicted_labels.to_csv(results_path+ framework + '\\stride_wise_predictions_' + \
-                                      str(model_name) + '_' + framework + '.csv')
+                                      str(model_name) + '_' + str(datastream_name) + '_' + framework + '.csv')
         test_subjects_true_predicted_labels.to_csv(results_path+ framework + '\\person_wise_predictions_' + \
-                                      str(model_name) + '_' + framework + '.csv')
+                                      str(model_name) + '_' + str(datastream_name) + '_' + framework + '.csv')
     
     
     #Plotting and saving the sequence and subject wise confusion matrices 
@@ -248,7 +252,7 @@ def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_nam
                                rownames=['Actual'], colnames=['Predicted'], margins = True)
     sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu", fmt = 'd')
     if save_results:
-        plt.savefig(results_path + framework + '\\CFmatrix_cross_generalize_' + framework + '_'+ str(model_name) + '_stride_wise.png', dpi = 350)
+        plt.savefig(results_path + framework + '\\CFmatrix_cross_generalize_' + framework + '_'+ str(model_name) + '_' + str(datastream_name)  + '_stride_wise.png', dpi = 350)
     plt.show()
     
     #Plotting and saving the subject wise confusion matrix 
@@ -257,7 +261,7 @@ def evaluate(model, test_features, yoriginal_, ypredicted_, framework, model_nam
                                    rownames=['Actual'], colnames=['Predicted'], margins = True)
     sns.heatmap(confusion_matrix, annot=True, cmap="YlGnBu")
     if save_results:
-        plt.savefig(results_path + framework+'\\CFmatrix_cross_generalize_' + framework + '_'+ str(model_name) + '.png', dpi = 350)
+        plt.savefig(results_path + framework+'\\CFmatrix_cross_generalize_' + framework + '_'+ str(model_name) + '_' + str(datastream_name)  + '.png', dpi = 350)
     plt.show()
     
     
@@ -279,7 +283,7 @@ def acc(y_true,y_pred):
 
 
 #We do not use LDA/QDA since our features are not normally distributed 
-def models(X, Y, train_indices, test_indices, model_name = 'random_forest', framework = 'W', results_path = '..\\MLresults\\', save_results = True):
+def models(X, Y, train_indices, test_indices, model_name = 'random_forest', framework = 'W', results_path = '..\\MLresults\\', save_results = True, datastream_name = 'All'):
     '''
     Arguments:
     X, Y, PID groups so that strides of each person are either in training or in testing set
@@ -409,13 +413,13 @@ def models(X, Y, train_indices, test_indices, model_name = 'random_forest', fram
         grid_search = GridSearchCV(mlp_grid, param_grid=grid, scoring=scores\
                            , n_jobs = 1, cv=zip(train_indices, test_indices), refit=False)
     grid_search.fit(X, Y_) #Fitting on the training set to find the optimal hyperparameters 
-    test_subjects_true_predicted_labels, stride_person_metrics = evaluate(grid_search, Y, yoriginal, ypredicted, framework, model_name, results_path, save_results)
+    test_subjects_true_predicted_labels, stride_person_metrics = evaluate(grid_search, Y, yoriginal, ypredicted, framework, model_name, results_path, save_results, datastream_name)
     return test_subjects_true_predicted_labels, stride_person_metrics
 
 
 
 #ROC curves 
-def plot_ROC(ml_model, test_set_true_predicted_labels, framework, results_path, save_results):
+def plot_ROC(ml_model, test_set_true_predicted_labels, framework, results_path, save_results, datastream_name = 'All'):
     '''
     Function to plot the ROC curve and confusion matrix for model given in ml_model name 
     Input: ml_models (name of models to plot the ROC for),  test_Y (true test set labels with PID), 
@@ -477,12 +481,12 @@ def plot_ROC(ml_model, test_set_true_predicted_labels, framework, results_path, 
     axes.set_xlabel('False Positive Rate')
     plt.tight_layout()
     if save_results:
-        plt.savefig(results_path + framework+'\\ROC_cross_generalize_' + framework + '_'+ ml_model+ '.png', dpi = 350)
+        plt.savefig(results_path + framework+'\\ROC_cross_generalize_' + framework + '_'+ ml_model+ '_' + str(datastream_name)  + '.png', dpi = 350)
     plt.show()
     
     
     
-def run_ml_models(ml_models, X, Y, train_indices, test_indices, framework, results_path, save_results = True):
+def run_ml_models(ml_models, X, Y, train_indices, test_indices, framework, results_path, save_results = True, datastream_name = 'All'):
     '''
     Function to run the ML models for the required framework
     Arguments: 
@@ -496,9 +500,9 @@ def run_ml_models(ml_models, X, Y, train_indices, test_indices, framework, resul
         global yoriginal, ypredicted
         yoriginal = []
         ypredicted = []
-        test_subjects_true_predicted_labels, stride_person_metrics = models(X, Y, train_indices, test_indices, ml_model, framework, results_path, save_results)
+        test_subjects_true_predicted_labels, stride_person_metrics = models(X, Y, train_indices, test_indices, ml_model, framework, results_path, save_results, datastream_name)
         metrics[ml_model] = sum(stride_person_metrics, [])
-        plot_ROC(ml_model, test_subjects_true_predicted_labels, framework, results_path, save_results)
+        plot_ROC(ml_model, test_subjects_true_predicted_labels, framework, results_path, save_results, datastream_name)
         print ('********************************')
     stride_scoring_metrics = ['stride_accuracy', 'stride_precision_macro', 'stride_precision_micro', 'stride_precision_weighted', \
                  'stride_precision_class_wise', 'stride_recall_macro', 'stride_recall_micro', \
@@ -515,7 +519,7 @@ def run_ml_models(ml_models, X, Y, train_indices, test_indices, framework, resul
     metrics.index = [i + '_mean' for i in stride_scoring_metrics] + [i + '_std' for i in stride_scoring_metrics] + [i + '_mean' for i in person_scoring_metrics] + [i + '_std' for i in person_scoring_metrics]
     #Saving the evaluation metrics and tprs/fprs/rauc for the ROC curves 
     if save_results:
-        metrics.to_csv(results_path+framework+'\\cross_generalize_'+framework+'_result_metrics.csv')
+        metrics.to_csv(results_path+framework+'\\cross_generalize_'+ str(datastream_name) + '_' + framework +'_result_metrics.csv')
     return metrics
 
 
