@@ -91,3 +91,17 @@
 
 ### Single stride traditional ML-based benchmark results for the Ablation Study
 * **Task generalization (W -> WT)**
+    * Feet:
+        * Stride-wise metrics: 
+            * Accuracy = 0.8307 (XGBoost)
+            * Precision Macro = 0.835 (XGBoost), Precision Micro = 0.8307 (XGBoost), Precision Weighted = 0.834 (XGBoost), Precision class wise = [0.774, 0.832, 0.899] (XGBoost)
+            * Recall Macro = 0.829 (XGBoost), Recall Micro = 0.8307 (XGBoost), Recall Weighted = 0.8307 (XGBoost), Recall class wise = [0.888, 0.716, 0.882] (XGBoost)
+            * F1 Macro = 0.829 (XGBoost), F1 Micro = 0.8307 (XGBoost), F1 Weighted = 0.829 (XGBoost), F1 class wise = [0.827, 0.770, 0.890] (XGBoost)
+            * AUC Macro = 0.945 (GBM), AUC Weighted = 0.945 (GBM)
+        * Subject-wise metrics: 
+            * Accuracy = 0.96 (GBM/Linear SVM)
+            * Precision Macro = 0.962 (GBM/Linear SVM), Precision Micro = 0.96 (GBM/Linear SVM), Precision Weighted = 0.964 (GBM/Linear SVM), Precision class wise = [0.88, 1, 1] (GBM/Linear SVM)
+            * Recall Macro = 0.962 (GBM/Linear SVM), Recall Micro = 0.96 (GBM/Linear SVM), Recall Weighted = 0.96 (GBM/Linear SVM), Recall class wise = [1, 0.88, 1] (GBM/Linear SVM)
+            * F1 Macro = 0.960 (GBM/Linear SVM), F1 Micro = 0.96 (GBM/Linear SVM), F1 Weighted = 0.96 (GBM/Linear SVM), F1 class wise = [0.941, 0.941, 1] (GBM/Linear SVM)
+            * AUC Macro = 1 (Linear SVM/GBM/XGBoost/Logistic Regression), AUC Weighted = 1 (Linear SVM/GBM/XGBoost/Logistic Regression)
+
