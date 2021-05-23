@@ -91,6 +91,8 @@ class GaitTrainer():
             train_indices: list of lists of .iloc indices for training folds 
             test_indices: list of lists of .iloc indices for testing folds 
         '''
+        first_index = True
+        
         #List to append lists of training and test indices for each CV fold
         self.train_indices, self.test_indices = [], []
         #PIDs define the groups for stratified group 5-fold CV
@@ -128,7 +130,10 @@ class GaitTrainer():
             test_split_indices = self.train_test_concatenated[(self.train_test_concatenated.PID.isin(test_split_pids)) \
                                                          & (self.train_test_concatenated.scenario==self.test_framework)].index
             #Concatenating the indices of strides for PIDs in testing only and CV split testing PIDs 
-            test_split_indices = test_split_indices.union(test_only_indices)
+            if first_index:
+                #Concatenating the indices of strides for PIDs in testing only and CV split testing PIDs 
+                test_split_indices = test_split_indices.union(test_only_indices)
+                first_index = False
         #     print (test_split_indices, test_split_indices.shape)
             #Appending the testing indices for the current fold 
             self.test_indices.append(test_split_indices)
