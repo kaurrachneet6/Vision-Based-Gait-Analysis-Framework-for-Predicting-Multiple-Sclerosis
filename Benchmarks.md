@@ -134,17 +134,22 @@
             * AUC Macro = 1, AUC Weighted = 1
 
 * **Subject generalization (W)**
-    * Feet (+speed): [] 
+    * Feet (+speed): [MLP] 
         * Stride-wise metrics: 
-            * Accuracy = 0.576$`\pm`$0.06 (Logistic Regression)
-            * Precision Macro = 0.565$`\pm`$0.06 (Logistic Regression), Precision Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Precision Weighted = 0.60 $`\pm`$ 0.07, Precision class wise = [0.68$`\pm`$0.10, 0.517$`\pm`$0.12, 0.497$`\pm`$0.13] (Logistic Regression)
-            * Recall Macro = 0.557$`\pm`$0.06 (Logistic Regression), Recall Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), Recall Weighted = 0.576 $`\pm`$ 0.06 (Logistic Regression), Recall class wise = [0.67 $`\pm`$ 0.16, 0.56 $`\pm`$ 0.12, 0.43 $`\pm`$ 0.17] (Logistic Regression)
-            * F1 Macro = 0.542 $`\pm`$ 0.05 (Logistic Regression), F1 Micro = 0.576 $`\pm`$ 0.06 (Logistic Regression), F1 Weighted = 0.5709 $`\pm`$ 0.06 (Logistic Regression), F1 class wise = [0.66 $`\pm`$ 0.103, 0.534 $`\pm`$ 0.117, 0.424 $`\pm`$ 0.052] (Logistic Regression)
-            * AUC Macro = 0.731 $`\pm`$ 0.046 (Logistic Regression), AUC Weighted = 0.7309 $`\pm`$ 0.047 (Logistic Regression)
+            * Accuracy = 0.553$`\pm`$0.053 
+            * Precision Macro = 0.544$`\pm`$0.069, Precision Micro = 0.553 $`\pm`$ 0.053, Precision Weighted = 0.589 $`\pm`$ 0.052, Precision class wise = [0.669$`\pm`$0.063, 0.472$`\pm`$0.202, 0.491$`\pm`$0.280] 
+            * Recall Macro = 0.520$`\pm`$0.065, Recall Micro = 0.553 $`\pm`$ 0.053, Recall Weighted = 0.553 $`\pm`$ 0.053, Recall class wise = [0.650$`\pm`$0.147, 0.478$`\pm`$0.048, 0.432$`\pm`$0.211] 
+            * F1 Macro = 0.518 $`\pm`$ 0.063, F1 Micro = 0.553 $`\pm`$ 0.053, F1 Weighted = 0.559 $`\pm`$ 0.047, F1 class wise = [0.657$`\pm`$0.100, 0.458$`\pm`$0.084, 0.440$`\pm`$0.222]  
+            * AUC Macro = 0.697 $`\pm`$ 0.068, AUC Weighted = 0.707 $`\pm`$ 0.064
         * Subject-wise metrics: 
             * Accuracy = 0.6904 $`\pm`$ 0.17 (Logistic Regression)
             * Precision Macro = 0.711 ± 0.177 (logistic_regression), Precision Micro = 0.69 ± 0.172 (logistic_regression), Precision Weighted = 0.832 ± 0.084 (linear_svm), Precision class wise = [0.833 ± 0.235, 0.2 ± 0.27, 0.2 ± 0.447] (kernel_svm)
             * Recall Macro = 0.7 ± 0.213 (logistic_regression), Recall Micro = 0.69 ± 0.172 (logistic_regression), Recall Weighted = 0.69 ± 0.172 (logistic_regression), Recall class wise = [0.866 ± 0.182, 0.633 ± 0.217, 0.6 ± 0.418] (logistic_regression)
             * F1 Macro = 0.671 ± 0.19 (logistic_regression), F1 Micro = 0.69 ± 0.172 (logistic_regression), F1 Weighted = 0.71 ± 0.157 (logistic_regression) , F1 class wise = [0.833 ± 0.235, 0.2 ± 0.273, 0.2 ± 0.447] (kernel_svm)
             * AUC Macro = 0.844 ± 0.104 (decision_tree), AUC Weighted = 0.843 ± 0.103 (decision_tree) 
+
+
+    Person-based model performance (mean):  [0.7523809523809525, 0.7, 0.7523809523809525, 0.8261904761904761, [0.7999999999999999, 0.9, 0.4], 0.711111111111111, 0.7523809523809525, 0.7523809523809525, [0.8666666666666667, 0.6666666666666666, 0.6], 0.6822222222222223, 0.7523809523809525, 0.7660317460317461, [0.7999999999999999, 0.9, 0.4], 0.7777777777777779, 0.7908730158730158]
+
+    Person-based model performance (standard deviation):  [0.06834619092574919, 0.09026709338484405, 0.06834619092574919, 0.12362623795949684, [0.18257418583505539, 0.22360679774997896, 0.4183300132670378], 0.13788526273323176, 0.06834619092574919, 0.06834619092574919, [0.18257418583505539, 0.2041241452319315, 0.5477225575051661], 0.09469900334516679, 0.06834619092574919, 0.08989005350046778, [0.18257418583505539, 0.22360679774997896, 0.4183300132670378], 0.09254628471643156, 0.06239882211032398]
 
