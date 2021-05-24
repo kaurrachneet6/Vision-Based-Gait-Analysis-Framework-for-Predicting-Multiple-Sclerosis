@@ -75,19 +75,22 @@
         * AUC Macro = 0.833±0.139 (decision_tree), AUC Weighted = 0.849±0.113 (decision_tree)
 
 
-* **Cross (task+subject) generalization (W -> WT)**
+* **Cross (task+subject) generalization (W -> WT)** [Adaboost]
     * Stride-wise metrics: 
-        * Accuracy = 0.482±0.075 (mlp)
-        * Precision Macro = 0.493±0.084 (mlp), Precision Micro = 0.482±0.075 (mlp), Precision Weighted = 0.528±0.103 (mlp), Precision class wise = [0.436 ± 0.171, 0.407 ±0.099, 0.635 ± 0.241] (mlp)
-        * Recall Macro = 0.495±0.078 (mlp), Recall Micro = 0.482±0.075 (mlp), Recall Weighted = 0.482±0.075 (mlp), Recall class wise = [0.615 ± 0.222, 0.475 ± 0.217, 0.393 ± 0.188] (mlp)
-        * F1 Macro = 0.469±0.081 (mlp), F1 Micro = 0.482±0.075 (mlp), F1 Weighted = 0.476±0.078 (mlp), F1 class wise = [0.497 ± 0.181, 0.431 ± 0.142, 0.476 ± 0.202] (mlp)
-        * AUC Macro = 0.676±0.06 (mlp), AUC Weighted = 0.681±0.049 (mlp)
+        * Accuracy = 0.447±0.155
+        * Precision Macro = 0.467±0.120, Precision Micro = 0.447±0.155, Precision Weighted = 0.495±0.097, Precision class wise = [0.471 ± 0.282, 0.418 ± 0.169, 0.512 ± 0.218]
+        * Recall Macro = 0.459±0.162, Recall Micro = 0.447±0.155, Recall Weighted = 0.447±0.155, Recall class wise = 
+        [0.505 ± 0.246, 0.476 ± 0.147, 0.397 ± 0.354]
+        * F1 Macro = 0.441±0.159, F1 Micro = 0.447±0.155, F1 Weighted = 0.441±0.145, F1 class wise = 
+        [0.479 ± 0.265, 0.438 ± 0.151, 0.405 ± 0.269]
+        * AUC Macro = 0.666±0.115, AUC Weighted = 0.670±0.104
     * Subject-wise metrics: 
-        * Accuracy = 0.5±0.15 (decision_tree)
-        * Precision Macro = 0.544±0.159 (decision_tree), Precision Micro = 0.5±0.15 (decision_tree), Precision Weighted = 0.781±0.178 (decision_tree), Precision class wise = [0.8 ± 0.273, 0.7 ± 0.447, 0.133 ± 0.182] (decision_tree)
-        * Recall Macro = 0.5±0.165 (random_forest), Recall Micro = 0.5±0.15 (decision_tree), Recall Weighted = 0.5±0.15 (decision_tree), Recall class wise = [0.54 ± 0.456, 0.313 ± 0.301, 0.3 ± 0.447] (kernel_svm)
-        * F1 Macro = 0.438±0.166 (mlp), F1 Micro = 0.5±0.15 (decision_tree), F1 Weighted = 0.572±0.163 (decision_tree), F1 class wise = [0.8 ± 0.273, 0.7 ± 0.447, 0.133 ±0.182] (decision_tree)
-        * AUC Macro = 0.733±0.118 (mlp), AUC Weighted = 0.752±0.096 (mlp)
+        * Accuracy = 0.576±0.292
+        * Precision Macro = 0.6±0.309, Precision Micro = 0.576±0.292, Precision Weighted = 0.688±0.360, Precision class wise = [0.6 ± 0.418, 0.7 ± 0.447, 0.5 ± 0.5]
+        * Recall Macro = 0.577±0.319, Recall Micro = 0.576±0.292, Recall Weighted = 0.576±0.292, Recall class wise = [0.7 ± 0.447, 0.633 ± 0.414, 0.4 ± 0.418]
+        * F1 Macro = 0.564±0.297, F1 Micro = 0.576±0.292, F1 Weighted = 0.601±0.304, F1 class wise = [0.6 ± 0.418, 0.7 ± 0.447, 0.5 ± 0.5]
+        * AUC Macro = 0.7319±0.193, AUC Weighted = 0.742±0.160
+
 
 ### Single stride traditional ML-based benchmark results for the Ablation Study
 * **Task generalization (W -> WT)**
