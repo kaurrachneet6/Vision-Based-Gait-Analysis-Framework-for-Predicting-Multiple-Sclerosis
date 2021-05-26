@@ -9,6 +9,7 @@ from ml_utils.gait_data_loader import GaitDataset
 from ml_utils import DLutils
 reload(DLutils)
 from ml_utils.DLutils import save_model, load_model, design, custom_StandardScaler, MyCheckpoint, FixRandomSeed
+import itertools
     
 class GaitTrainer():
     def __init__(self, parameter_dict, hyperparameter_grid, config_path):
@@ -771,6 +772,70 @@ class GaitTrainer():
         main_result_cols = result_mean_cols + result_std_cols
         #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
         self.perm_imp_results_df[main_result_cols].to_csv(self.save_results_path + 'Permutation_importance_only_main_results.csv')
+        
+        
+    ''' SHAP based feature importance '''
+    def subject_gen_shap_initial_setup(self, model_class = None, model = None, device_ = torch.device("cuda"), n_splits_ = 5, fold = 1):
+        '''
+        SHAP Feature Importance for subject generalization initial setup
+        We will be using training and validation data from the first fold by default
+        '''  
+        self.device = device_
+        #Case when we can use all subjects in W or WT for full analysis 
+        #Subject generalization W/WT framework 
+        #Trial W/WT for training and testing both
+        self.trial = self.labels[self.labels['scenario']==self.scenario]
+        print ('Original number of subjects in trial ', self.scenario, ' for cross validation:', len(self.trial['PID'].unique()))
+        print ('Number of subjects in trial ', self.scenario, ' in each cohort:\n', self.trial.groupby('PID').first()['cohort'].value_counts())
+        #Total strides and imbalance of labels in the training and testing set
+        #Training set 
+        print('Strides in trial ', self.scenario, ' W for cross validation: ', len(self.trial))
+        print ('HOA, MS and PD strides in trial ', self.scenario, ' :\n', self.trial['cohort'].value_counts())
+        print ('Imbalance ratio in trial ', self.scenario, ' (controls:MS:PD)= 1:X:Y\n', self.trial['cohort'].value_counts()/self.trial['cohort'].value_counts()['HOA'])
+
+        print ('PIDs getting used in this run: ', self.trial['PID'].unique())        
+        
+        #Get dataloader 
+        #Subject generalization W or WT framework 
+        #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
+        self.data = GaitDataset(self.data_path, self.labels_file, self.trial['PID'].unique(), framework = self.scenario, datastream = 'All')      
+        self.create_folder_for_results()   
+        self.torch_model = model
+        self.torch_model_class = model_class
+        self.model = self.create_model(self.torch_model, device_)
+        self.X_sl = SliceDataset(self.data, idx = 0)
+        self.Y_sl = SliceDataset(self.data, idx = 1)
+        self.PID_sl = SliceDataset(self.data, idx = 2)
+        
+        self.training_time = 0
+        self.total_epochs = 0
+        self.save_results = False
+        
+        #shuffle data first
+        self.X_sl, self.Y_sl, self.PID_sl = shuffle(self.X_sl, self.Y_sl, self.PID_sl, random_state = 0) 
+#         self.Y_sl = pd.DataFrame(self.Y_sl) #To attach indices for correspondance to relative PID
+        
+        self.X_sl_ = [x for x in self.X_sl]
+#         print ('X format: ', self.X_sl_train_[0])
+        self.Y_sl_ = [int(y) for y in self.Y_sl]
+        self.PID_sl_ = [int(pid) for pid in self.PID_sl]
+        
+#         print ('Shuffled PID and Y:', self.PID_sl_, self.Y_sl_)        
+        self.gkf = StratifiedGroupKFold(n_splits=n_splits_)  
+        
+        train_indices, test_indices = next(itertools.islice(self.gkf.split(self.X_sl_, self.Y_sl_, groups=self.PID_sl_), fold-1 , fold, 1)) #For the given fold 
+        
+        self.X_sl_train = self.X_sl[train_indices]
+        self.Y_sl_train = self.Y_sl[train_indices]
+        self.PID_sl_train = self.PID_sl[train_indices]
+        
+        self.X_sl_test = self.X_sl[test_indices]
+        self.Y_sl_test = self.Y_sl[test_indices]
+        self.PID_sl_test = self.PID_sl[test_indices]
+            
+        self.model.initialize() # This is important!
+        self.model.load_params(f_params=self.save_results_path + self.parameter_dict['saved_model_path'])
+        
         
         
 class PermuteTransform():
