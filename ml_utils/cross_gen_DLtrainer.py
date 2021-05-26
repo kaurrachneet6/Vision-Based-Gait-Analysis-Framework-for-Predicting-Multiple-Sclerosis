@@ -889,7 +889,69 @@ class GaitTrainer():
         #Saving only the mean and std per 12 feature groups (24 columns) that will be used to plot FI later
         self.perm_imp_results_df[main_result_cols].to_csv(self.save_results_path + 'Permutation_importance_only_main_results.csv')
         
+     
+    ''' SHAP based feature importance '''
+    def cross_gen_shap_initial_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, fold = 1):
+        '''
+        SHAP Feature Importance for cross generalization initial setup
+        We will be using training and validation data from the first fold by default
+        ''' 
+        self.extract_train_test_common_PIDs()
+        design()
         
+        #Trial W for training 
+        self.trial_train = self.labels[self.labels['scenario']==self.train_framework] #Full trial W with all 32 subjects 
+        #Trial WT for testing 
+        self.trial_test = self.labels[self.labels['scenario']==self.test_framework] #Full trial WT with all 26 subjects 
+        
+        #Training only data with strides from W
+        train_only_trial_train = self.trial_train[self.trial_train.PID.isin(self.train_pids)] #subset of trial W with subjects only present in trial W but not in trial WT
+        #Testing only data with strides from WT
+        test_only_trial_test = self.trial_test[self.trial_test.PID.isin(self.test_pids)] #subset of trial WT with subjects only present in trial WT but not in trial W
+
+        #Training data with strides from W for common PIDs in trials W and WT
+        self.train_trial_train_commonPID = self.trial_train[self.trial_train.PID.isin(self.common_pids)] #subset of trial W with common subjects in trial W and WT
+        #Testing data with strides from WT for common PIDs in trials W and WT
+        self.test_trial_test_commonPID = self.trial_test[self.trial_test.PID.isin(self.common_pids)] #subset of trial W with common subjects in trial W and WT
+
+        self.X_train_common = self.train_trial_train_commonPID.drop(['PID', 'label'], axis = 1)
+        self.Y_train_common = self.train_trial_train_commonPID[['PID', 'label']]
+        self.train_test_concatenated = self.labels[self.labels.scenario.isin([self.train_framework, self.test_framework])].reset_index().drop('index', axis = 1)    
+        
+        #Get dataloader 
+        #Here the strides are normalized using within stride normalization, but frame counts are yet to normalized using training folds
+        self.data = GaitDataset(self.data_path, self.labels_file, self.train_test_concatenated['PID'].unique(), framework = [self.train_framework, self.test_framework], datastream = "All")
+        #Computing the X (91 features), Y (PID, label) for the models 
+        self.X_sl = SliceDataset(self.data, idx = 0)
+        self.Y_sl = SliceDataset(self.data, idx = 1)
+        self.PID_sl = SliceDataset(self.data, idx = 2)
+        
+        #Shuffling the concatenated data
+        self.train_test_concatenated, self.X_sl, self.Y_sl, self.PID_sl = shuffle(self.train_test_concatenated, self.X_sl, self.Y_sl, self.PID_sl, random_state = 0) 
+        
+        #Computing the training and test set indices for the CV folds         
+        self.compute_train_test_indices_split(n_splits_)
+        
+        #Train and Test X and Y 
+        train_indices = self.train_indices[fold]
+        self.X_sl_train = self.X_sl[train_indices]
+        self.Y_sl_train = self.Y_sl[train_indices]
+        self.PID_sl_train = self.PID_sl[train_indices]
+        
+        test_indices = self.test_indices[fold]
+        self.X_sl_test = self.X_sl[test_indices]
+        self.Y_sl_test = self.Y_sl[test_indices]
+        self.PID_sl_test = self.PID_sl[test_indices]
+        
+        #Model 
+        self.create_folder_for_results()  
+        self.torch_model = model_
+        self.model = self.create_model(self.torch_model, device_)
+        self.model.initialize() # This is important!
+        self.model.load_params(f_params=self.save_results_path + self.parameter_dict['saved_model_path'])
+            
+            
+                 
 class PermuteTransform():
     '''
     Class for permutation for features of interest for the testing folds with model trained on original features in the training folds 
