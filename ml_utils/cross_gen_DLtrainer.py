@@ -891,7 +891,7 @@ class GaitTrainer():
         
      
     ''' SHAP based feature importance '''
-    def cross_gen_shap_initial_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, fold = 1):
+    def cross_gen_shap_initial_setup(self, model_ = None, device_ = torch.device("cuda"), n_splits_ = 5, fold_index = 0):
         '''
         SHAP Feature Importance for cross generalization initial setup
         We will be using training and validation data from the first fold by default
@@ -933,12 +933,12 @@ class GaitTrainer():
         self.compute_train_test_indices_split(n_splits_)
         
         #Train and Test X and Y 
-        train_indices = self.train_indices[fold]
+        train_indices = self.train_indices[fold_index]
         self.X_sl_train = self.X_sl[train_indices]
         self.Y_sl_train = self.Y_sl[train_indices]
         self.PID_sl_train = self.PID_sl[train_indices]
         
-        test_indices = self.test_indices[fold]
+        test_indices = self.test_indices[fold_index]
         self.X_sl_test = self.X_sl[test_indices]
         self.Y_sl_test = self.Y_sl[test_indices]
         self.PID_sl_test = self.PID_sl[test_indices]
