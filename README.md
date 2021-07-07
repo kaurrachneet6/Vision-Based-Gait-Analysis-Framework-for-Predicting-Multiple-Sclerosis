@@ -75,7 +75,7 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **TaskGen_SHAP.ipynb**: SHAP feature importance (https://shap.readthedocs.io/en/latest/) for Task generalization framework 
 * **SubjectGenW_SHAP.ipynb/SubjectGenWT_SHAP.ipynb**: SHAP feature importance (https://shap.readthedocs.io/en/latest/) for Subject generalization W and WT frameworks respectively
 * **CrossGen_SHAP.ipynb**: SHAP feature importance for Cross generalization framework
-* **SeverityAnalysis.ipynb**: 
+* **SeverityAnalysis.ipynb**: We check the correlation (using visualization) between the classification performance (using binary correctly/incorrectly classified subject and continuous no. of strides correctly classified for each subject) and SPBB score (range 0-12) representing the frailty of the individual.
 
 ### Citation:
 If you use this code, please consider citing our work:
