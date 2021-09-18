@@ -873,7 +873,9 @@ class GaitTrainer():
         
         #12 Feature groups to explore the importance for 
         features = ['right hip', 'right knee', 'right ankle', 'left hip', 'left knee', 'left ankle', 'left toe 1', 'left toe 2', 'left heel', 'right toe 1', 'right toe 2', 'right heel']
-    
+        global runs 
+        runs = 0
+        
         for feature in features:
             #For all 12 feature groups 
             print ('Running for ', feature)
@@ -948,7 +950,7 @@ class GaitTrainer():
         self.torch_model = model_
         self.model = self.create_model(self.torch_model, device_)
         self.model.initialize() # This is important!
-        self.model.load_params(f_params=self.save_results_path + self.parameter_dict['saved_model_path'])
+        self.model.load_params(f_params=self.save_results_path + self.parameter_dict['saved_model_path'], f_history = self.save_results_path + 'cnn1d_try_cross_gen_2021_05_25-23_57_22_107931\\train_end_history.json')
             
             
                  
@@ -973,9 +975,12 @@ class PermuteTransform():
         '''
         Shuffle the desire features across the entire testing set 
         '''
+        global runs
+        np.random.seed(runs)
         #Create a shuffled copy for the testing dataset
         self.X_shuffled = shuffle(X, random_state = random.randint(0, 100))
         X.transform = self.permute_shuffle
+        runs += 1
         return X
         
     def fit_transform(self, X, y=None):
