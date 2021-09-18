@@ -368,7 +368,8 @@ class GaitTrainer():
         self.trainable_params =  sum(p.numel() for p in self.pipe.set_params(**self.best_params)['net'].module.parameters() if p.requires_grad)
         self.nontrainable_params = self.total_parameters - self.trainable_params
         
-        trueY_df = pd.DataFrame(data = np.array((self.PID_sl, self.Y_sl_)).T, columns = ['PID', 'label'])
+        trueY_df = pd.DataFrame(data = np.array((np.array(torch.stack(list(self.PID_sl)))[:, 0], self.Y_sl_)).T, columns = ['PID', 'label'])
+#         print ('true Y:', self.Y_sl_)
         person_acc, person_p_macro, person_p_micro, person_p_weighted, person_p_class_wise, person_r_macro, person_r_micro, person_r_weighted, person_r_class_wise, person_f1_macro, person_f1_micro, person_f1_weighted, person_f1_class_wise, person_auc_macro, person_auc_weighted = [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
 
         class_wise_scores = {'precision_class_wise': [], 'recall_class_wise': [], 'f1_class_wise': []}
@@ -389,6 +390,8 @@ class GaitTrainer():
             probs_stride_wise = x.divide(x.sum(axis = 1), axis = 0).fillna(0)
             proportion_strides_correct[probs_stride_wise.columns] = probs_stride_wise
             proportion_strides_correct.fillna(0, inplace=True)
+#             print ('groupby pid:')
+#             display(trueY_df.groupby('PID').first())
             proportion_strides_correct['True Label'] = trueY_df.groupby('PID').first()
             #Input for precision, recall and F1 score
             proportion_strides_correct['Predicted Label'] = proportion_strides_correct[[0, 1, 2]].idxmax(axis = 1) 
@@ -757,7 +760,8 @@ class GaitTrainer():
         
         #12 Feature groups to explore the importance for 
         features = ['right hip', 'right knee', 'right ankle', 'left hip', 'left knee', 'left ankle', 'left toe 1', 'left toe 2', 'left heel', 'right toe 1', 'right toe 2', 'right heel']
-    
+        global runs 
+        runs = 0
         for feature in features:
             #For all 12 feature groups 
             print ('Running for ', feature)
@@ -859,9 +863,13 @@ class PermuteTransform():
         '''
         Shuffle the desire features across the entire testing set 
         '''
+        global runs
+        np.random.seed(runs)
+
         #Create a shuffled copy for the testing dataset
         self.X_shuffled = shuffle(X, random_state = random.randint(0, 100))
         X.transform = self.permute_shuffle
+        runs += 1
         return X
         
     def fit_transform(self, X, y=None):
