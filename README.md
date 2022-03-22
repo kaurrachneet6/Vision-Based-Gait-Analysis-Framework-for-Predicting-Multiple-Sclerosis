@@ -53,7 +53,6 @@ To validate the estimates 3D poses via CoP computed on the treadmill
 * **RNN_model.py**: Vanilla Recurrent Neural Network (Uni- and Bi-directional versions)
 * **GRU_model.py**: Gated Recurrent Unit model (Uni- and Bi-directional)
 * **LSTM_model.py**: Long-short term memory model (Uni- and Bi-directional)
-* **CNN_LSTM_model.py**:
 
 
 #### Machine Learning 
